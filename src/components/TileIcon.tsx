@@ -20,7 +20,7 @@ const ICONS: Record<TileIconKind, Icon> = {
   // kurze Melodie
   mono: { treble: ['g/4', 'b/4', 'a/4', 'e/5', 'd/5'].map(q) },
   // zwei Stimmen auf zwei Systemen
-  two: { treble: ['e/5', 'f/5', 'g/5', 'e/5'].map(q), bass: ['c/3', 'd/3', 'b/2', 'c/3'].map(q) },
+  two: { treble: ['e/4', 'f/4', 'g/4', 'e/4'].map(q), bass: ['c/3', 'd/3', 'b/2', 'c/3'].map(q) },
   // vierstimmiger Satz I–IV–I, nur der Bass im Bassschlüssel
   four: {
     treble: [w('g/4', 'c/5', 'e/5'), w('a/4', 'c/5', 'f/5'), w('g/4', 'c/5', 'e/5')],
