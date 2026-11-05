@@ -348,6 +348,19 @@ kbd.hint {
   font-size: 0.9rem;
 }
 
+.tile-icon {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  height: 80px;
+  margin-bottom: 10px;
+  color: var(--fg);
+}
+
+.tile:hover .tile-icon {
+  color: var(--accent);
+}
+
 .tile .tag {
   font-size: 0.75rem;
   color: var(--accent);
