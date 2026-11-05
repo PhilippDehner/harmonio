@@ -3,6 +3,7 @@ import { isAudioRunning, play, stopAll } from '../audio/engine';
 import { useAutoNext } from '../components/autoNext';
 import { useHotkeys } from '../components/hotkeys';
 import NoteNamer from '../components/NoteNamer';
+import SolutionScore from '../components/SolutionScore';
 import { DetailTable, LiveStats } from '../components/StatsViews';
 import { useTour } from '../components/Tour';
 import {
@@ -14,7 +15,7 @@ import {
   isCorrectNaming,
   isShortcutPrefix,
 } from '../music/intervals';
-import { germanName, toMidi } from '../music/pitch';
+import { germanName, germanNameWithOctave, toMidi } from '../music/pitch';
 import { IntervalPlayMode, IntervalTask, chooseAdaptive, makeIntervalTask } from '../music/tasks';
 import {
   RANGES,
@@ -268,6 +269,13 @@ export default function IntervalsPage() {
             ? `Richtig: ${task.interval.long}.`
             : `Falsch – richtig ist: ${task.interval.long} (deine Antwort: ${intervalById(given!).long}).`}
         </div>
+      )}
+
+      {phase === 'done' && (
+        <SolutionScore
+          sounds={mode === 'harmonisch' ? [[task.start, task.second]] : [[task.start], [task.second]]}
+          ariaLabel={`Lösung: ${germanNameWithOctave(task.start)} und ${germanNameWithOctave(task.second)}`}
+        />
       )}
 
       {phase !== 'answer' && given === task.interval.id && settings.intervalNaming && (

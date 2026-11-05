@@ -751,3 +751,7 @@ button.primary kbd.hint {
   border-color: currentColor;
   opacity: 0.75;
 }
+
+.solution-score {
+  max-width: 280px;
+}

@@ -3,6 +3,7 @@ import { isAudioRunning, play, stopAll } from '../audio/engine';
 import { useAutoNext } from '../components/autoNext';
 import { useHotkeys } from '../components/hotkeys';
 import NoteNamer from '../components/NoteNamer';
+import SolutionScore from '../components/SolutionScore';
 import { DetailTable, LiveStats } from '../components/StatsViews';
 import { useTour } from '../components/Tour';
 import {
@@ -15,7 +16,7 @@ import {
   chordNamingSolution,
   isCorrectChordNaming,
 } from '../music/chords';
-import { germanName, toMidi } from '../music/pitch';
+import { germanName, germanNameWithOctave, toMidi } from '../music/pitch';
 import { ChordTask, chooseAdaptive, makeChordTask } from '../music/tasks';
 import { aggregateStats, getState, recordChord, recordNaming, updateSettings, useAppData } from '../storage/store';
 
@@ -268,6 +269,14 @@ export default function ChordsPage() {
         <div className={`feedback ${isCorrect ? 'ok' : 'err'}`} role="status">
           {isCorrect ? `Richtig: ${solutionLabel}.` : `Falsch – richtig ist: ${solutionLabel} (deine Antwort: ${givenLabel}).`}
         </div>
+      )}
+
+      {phase === 'done' && (
+        <SolutionScore
+          sounds={[task.voicing.notes]}
+          satb
+          ariaLabel={`Lösung: ${task.voicing.notes.map(germanNameWithOctave).join(', ')}`}
+        />
       )}
 
       {phase !== 'answer' && isCorrect && settings.chordNaming && (
