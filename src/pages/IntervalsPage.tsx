@@ -96,6 +96,21 @@ export default function IntervalsPage() {
     [playTask],
   );
 
+  // Moduswechsel: dieselbe Aufgabe behalten, nur die Richtung ggf. anpassen
+  const switchMode = useCallback(
+    (newMode: IntervalPlayMode) => {
+      if (autoPlayTimer.current) window.clearTimeout(autoPlayTimer.current);
+      stopAll();
+      const up = newMode !== 'abwaerts';
+      const t = up === task.up ? task : { ...task, start: task.second, second: task.start, up };
+      setTask(t);
+      autoPlayTimer.current = window.setTimeout(() => {
+        if (isAudioRunning()) playTask(t);
+      }, 300);
+    },
+    [task, playTask],
+  );
+
   // Erste Aufgabe automatisch abspielen
   useEffect(() => {
     autoPlayTimer.current = window.setTimeout(() => {
@@ -168,8 +183,9 @@ export default function IntervalsPage() {
               key={m.id}
               aria-pressed={mode === m.id}
               onClick={() => {
+                if (m.id === mode) return;
                 updateSettings({ intervalMode: m.id });
-                next({ mode: m.id });
+                switchMode(m.id);
               }}
             >
               {m.label}
@@ -187,8 +203,10 @@ export default function IntervalsPage() {
             type="checkbox"
             checked={settings.intervalExtended}
             onChange={(e) => {
-              updateSettings({ intervalExtended: e.target.checked });
-              next({ extended: e.target.checked });
+              const extended = e.target.checked;
+              updateSettings({ intervalExtended: extended });
+              // Nur neue Aufgabe, wenn die aktuelle nicht mehr zur Auswahl gehört
+              if (!extended && task.interval.extended) next({ extended });
             }}
           />
           über die Oktave
