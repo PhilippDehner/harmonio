@@ -66,11 +66,11 @@ export default function SettingsPage() {
 
       <div className="card stack">
         <h2 style={{ marginTop: 0 }}>Übungen</h2>
-        <label className="toggle">
+        <label className="toggle" style={{ display: 'flex' }}>
           <input type="checkbox" checked={settings.adaptive} onChange={(e) => updateSettings({ adaptive: e.target.checked })} />
           Adaptive Aufgabenauswahl (häufig falsch Beantwortetes kommt öfter dran)
         </label>
-        <label className="toggle">
+        <label className="toggle" style={{ display: 'flex' }}>
           <input type="checkbox" checked={settings.showStats} onChange={(e) => updateSettings({ showStats: e.target.checked })} />
           Statistik während der Übung anzeigen
         </label>
