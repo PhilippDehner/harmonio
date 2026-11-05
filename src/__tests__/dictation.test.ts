@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { evaluateVoice, evaluateChorale } from '../dictation/evaluate';
-import { insertNote, distributeChorale } from '../dictation/editing';
+import { changeDuration, insertNote, distributeChorale } from '../dictation/editing';
 import { parseMusicXml } from '../dictation/musicxml';
-import { DNote, Duration, durationTicks } from '../dictation/model';
+import { DNote, Duration, durationTicks, restsInMeasure } from '../dictation/model';
 
 const q: Duration = { base: 'q', dotted: false, triplet: false };
 const h: Duration = { base: 'h', dotted: false, triplet: false };
@@ -106,5 +106,46 @@ describe('MusicXML', () => {
     expect(d.voices.length).toBe(1);
     expect(d.voices[0].map((n) => n.start)).toEqual([0, 24, 60, 72]);
     expect(d.voices[0][2].pitch).toEqual({ step: 3, alter: 1, octave: 4 });
+  });
+});
+
+describe('restsInMeasure', () => {
+  const m = { start: 96, ticks: 96 };
+  const pitch = P(0);
+  it('leerer Takt erhält Ganztaktpause', () => {
+    const r = restsInMeasure([], m);
+    expect(r).toHaveLength(1);
+    expect(r[0].wholeMeasure).toBe(true);
+  });
+  it('füllt den Rest nach einer Viertel mit Viertel- und Halber Pause', () => {
+    const r = restsInMeasure([{ id: 'a', start: 96, dur: q, pitch }], m);
+    expect(r.map((x) => [x.start, x.dur.base])).toEqual([
+      [120, 'q'],
+      [144, 'h'],
+    ]);
+  });
+  it('füllt Lücken vor und zwischen Noten', () => {
+    const r = restsInMeasure([{ id: 'a', start: 144, dur: q, pitch }], m);
+    expect(r.map((x) => [x.start, x.dur.base])).toEqual([
+      [96, 'h'],
+      [168, 'q'],
+    ]);
+  });
+});
+
+describe('changeDuration', () => {
+  const measures = [{ start: 0, ticks: 96 }];
+  it('verlängert eine Note und ersetzt überlappende', () => {
+    const notes = melody([0, 1, 2, 3]);
+    const r = changeDuration(notes, measures, 's0', h);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.id).toBe('s0');
+      expect(r.notes.map((n) => n.id)).toEqual(['s0', 's2', 's3']);
+    }
+  });
+  it('lehnt Überschreiten des Taktes ab', () => {
+    const notes = melody([0, 1, 2, 3]);
+    expect(changeDuration(notes, measures, 's3', h).ok).toBe(false);
   });
 });

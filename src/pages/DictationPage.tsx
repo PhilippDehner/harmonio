@@ -397,6 +397,7 @@ function DictationPage() {
               toMeasure={d.measures.length}
               scale={0.7}
               highlightMeasure={measure}
+              fillRests
               onHit={(hit) => setMeasure(hit.measure)}
             />
           </div>
@@ -460,6 +461,7 @@ function DictationPage() {
                 staves={staves}
                 voices={showSolution || !evaluation ? d.voices : evaluation.input}
                 noteStyles={evaluation ? stylesFor(evaluation.results, cssVar) : undefined}
+                fillRests={!showSolution && !!evaluation}
                 fromMeasure={0}
                 toMeasure={d.measures.length}
                 scale={window.innerWidth < 600 ? 0.8 : 1}

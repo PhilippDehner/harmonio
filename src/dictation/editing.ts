@@ -52,6 +52,19 @@ export function moveNoteInTime(notes: DNote[], measures: Measure[], id: string, 
   return { ok: true, id, notes: r.notes.map((n) => (n.id === r.id ? { ...n, id } : n)) };
 }
 
+/**
+ * Ändert die Dauer einer Note (Beginn bleibt). Wird sie länger, werden
+ * überlappende eigene Noten wie beim Einfügen ersetzt.
+ */
+export function changeDuration(notes: DNote[], measures: Measure[], id: string, dur: Duration): EditResult {
+  const note = notes.find((n) => n.id === id);
+  if (!note || note.given) return { ok: false, message: 'Diese Note kann nicht geändert werden.' };
+  const rest = notes.filter((n) => n.id !== id);
+  const r = insertNote(rest, measures, note.start, dur, note.pitch);
+  if (!r.ok) return r;
+  return { ok: true, id, notes: r.notes.map((n) => (n.id === r.id ? { ...n, id } : n)) };
+}
+
 /** Nächste freie Einfügeposition nach einer Note bzw. am Taktanfang. */
 export function nextPosition(notes: DNote[], measures: Measure[], measureIndex: number): number {
   const m = measures[measureIndex];
