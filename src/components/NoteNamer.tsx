@@ -52,9 +52,9 @@ export default function NoteNamer({ prompt, slots, onSubmit, result }: Props) {
     if (answers.every((a) => a !== null)) onSubmit(answers as PitchName[]);
   }
 
-  useHotkeys((e) => {
+  useHotkeys((e, key) => {
     if (done) return;
-    const k = e.key.toLowerCase();
+    const k = key.toLowerCase();
     if (k in KEY_TO_STEP && !(k === 'b')) {
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -62,18 +62,18 @@ export default function NoteNamer({ prompt, slots, onSubmit, result }: Props) {
       setPendingAlter(0);
       return;
     }
-    if (pendingStep !== null && (e.key === 'b' || e.key === '#')) {
+    if (pendingStep !== null && (key === 'b' || key === '#')) {
       e.preventDefault();
       e.stopImmediatePropagation();
       const alter =
-        e.key === 'b' ? (pendingAlter < 0 ? Math.max(-2, pendingAlter - 1) : -1) : pendingAlter > 0 ? Math.min(2, pendingAlter + 1) : 1;
+        key === 'b' ? (pendingAlter < 0 ? Math.max(-2, pendingAlter - 1) : -1) : pendingAlter > 0 ? Math.min(2, pendingAlter + 1) : 1;
       setPendingAlter(alter);
       if (timer.current) window.clearTimeout(timer.current);
       const step = pendingStep;
       timer.current = window.setTimeout(() => commit(step, alter), Math.abs(alter) === 2 ? 50 : 800);
       return;
     }
-    if (e.key === 'Enter') {
+    if (key === 'Enter') {
       e.preventDefault();
       e.stopImmediatePropagation();
       if (pendingStep !== null) commit(pendingStep, pendingAlter);

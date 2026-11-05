@@ -1,7 +1,18 @@
 import { useEffect, useRef } from 'react';
 
+/**
+ * Taste vereinheitlichen: Ziffernblock-Ziffern liefern unabhängig von NumLock
+ * die Ziffer, Ziffernblock-Enter liefert 'Enter'.
+ */
+export function normalizedKey(e: KeyboardEvent): string {
+  const m = /^Numpad(\d)$/.exec(e.code);
+  if (m) return m[1];
+  if (e.code === 'NumpadEnter') return 'Enter';
+  return e.key;
+}
+
 /** Tastatur-Handler, der Eingaben in Formularfeldern ignoriert. */
-export function useHotkeys(handler: (e: KeyboardEvent) => void, enabled = true) {
+export function useHotkeys(handler: (e: KeyboardEvent, key: string) => void, enabled = true) {
   const ref = useRef(handler);
   ref.current = handler;
   useEffect(() => {
@@ -13,7 +24,7 @@ export function useHotkeys(handler: (e: KeyboardEvent) => void, enabled = true) 
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (document.querySelector('.overlay, .tour-pop')) return;
-      ref.current(e);
+      ref.current(e, normalizedKey(e));
     };
     window.addEventListener('keydown', listener);
     return () => window.removeEventListener('keydown', listener);

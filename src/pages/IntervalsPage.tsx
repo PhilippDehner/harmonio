@@ -135,19 +135,19 @@ export default function IntervalsPage() {
     setPhase(correct && settings.intervalNaming ? 'naming' : 'done');
   }
 
-  useHotkeys((e) => {
-    if (e.key === ' ') {
+  useHotkeys((e, key) => {
+    if (key === ' ') {
       e.preventDefault();
       playTask(task);
       return;
     }
-    if (phase === 'done' && e.key === 'Enter') {
+    if (phase === 'done' && key === 'Enter') {
       e.preventDefault();
       next();
       return;
     }
     if (phase !== 'answer') return;
-    const k = e.key === 'T' ? 'T' : e.key.toLowerCase();
+    const k = key === 'T' ? 'T' : key.toLowerCase();
     if (!/^[0-9kgt]$/i.test(k)) return;
     e.preventDefault();
     const buf = bufferRef.current + k;

@@ -133,26 +133,26 @@ export default function ChordsPage() {
     if (typeAnswer) evaluate(typeAnswer, inv);
   }
 
-  useHotkeys((e) => {
-    if (e.key === ' ') {
+  useHotkeys((e, key) => {
+    if (key === ' ') {
       e.preventDefault();
       playTask(task);
       return;
     }
-    if (phase === 'done' && e.key === 'Enter') {
+    if (phase === 'done' && key === 'Enter') {
       e.preventDefault();
       next();
       return;
     }
     if (phase !== 'answer') return;
-    const k = e.key.toUpperCase();
+    const k = key.toUpperCase();
     const type = CHORD_TYPES.find((t) => t.key === k || (t.id === 'uberm' && k === 'U'));
     if (type) {
       e.preventDefault();
       chooseType(type.id);
       return;
     }
-    const inv = INVERSIONS.find((i) => i.key === e.key);
+    const inv = INVERSIONS.find((i) => i.key === key);
     if (inv && level === 2) {
       e.preventDefault();
       chooseInversion(inv.id);
