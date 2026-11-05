@@ -28,6 +28,8 @@ export default function SettingsPage() {
   const settings = useSettings();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // Entwurf des Eingabefelds, damit es beim Tippen auch leer sein darf
+  const [secondsDraft, setSecondsDraft] = useState<string | null>(null);
 
   return (
     <div className="stack">
@@ -97,12 +99,14 @@ export default function SettingsPage() {
             min={1}
             max={30}
             step={1}
-            value={settings.autoNextSeconds}
+            value={secondsDraft ?? settings.autoNextSeconds}
             disabled={!settings.autoNextCorrect && !settings.autoNextWrong}
             onChange={(e) => {
+              setSecondsDraft(e.target.value);
               const v = Math.round(Number(e.target.value));
-              if (v >= 1 && v <= 30) updateSettings({ autoNextSeconds: v });
+              if (e.target.value !== '' && v >= 1 && v <= 30) updateSettings({ autoNextSeconds: v });
             }}
+            onBlur={() => setSecondsDraft(null)}
             style={{ width: '4.5em' }}
           />
           Sekunden
