@@ -45,4 +45,19 @@ describe('Wiedergabe', () => {
     expect(c[0][0] % 12).toBe(5); // F im Bass
     expect(c[2][0] % 12).toBe(0); // C im Bass
   });
+  it('Kadenz: I Oktavlage, IV Quintlage, V Terzlage, I Oktavlage', () => {
+    for (const [fifths, minor] of [[0, false], [-1, false], [3, false], [-6, false], [0, true], [2, true]] as const) {
+      const c = cadenceChords(fifths, minor);
+      const tonicPc = c[0][0] % 12;
+      expect(c[0][3] % 12).toBe(tonicPc); // I: Grundton im Sopran
+      expect(c[1][3] % 12).toBe(tonicPc); // IV: Quinte (= Tonika) im Sopran
+      expect(c[2][3] % 12).toBe((tonicPc + 11) % 12); // V: Terz (Leitton) im Sopran
+      expect(c[3][3]).toBe(c[0][3]);
+      // enge Lage: Oberstimmen innerhalb einer Oktave, aufsteigend
+      c.forEach((ch) => {
+        expect(ch[1] < ch[2] && ch[2] < ch[3]).toBe(true);
+        expect(ch[3] - ch[1]).toBeLessThan(12);
+      });
+    }
+  });
 });
