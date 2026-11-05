@@ -44,13 +44,13 @@ export default function Layout() {
       </main>
       <footer className="site-footer">
         <p>
-          Kontakt zum Entwickler: <a href={GITHUB_URL}>GitHub</a> · <a href={LINKEDIN_URL}>LinkedIn</a> ·{' '}
-          <a href={REPO_URL}>Quellcode</a>
+          Kontakt zum Entwickler: <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">GitHub</a> · <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer">LinkedIn</a> ·{' '}
+          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">Quellcode</a>
         </p>
         <p>
           Klavier-Samples:{' '}
-          <a href="https://archive.org/details/SalamanderGrandPianoV3">Salamander Grand Piano</a> von Alexander Holm,
-          Lizenz <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>
+          <a href="https://archive.org/details/SalamanderGrandPianoV3" target="_blank" rel="noopener noreferrer">Salamander Grand Piano</a> von Alexander Holm,
+          Lizenz <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>
         </p>
       </footer>
       {isExercise && <AudioHint />}

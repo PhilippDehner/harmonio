@@ -693,6 +693,7 @@ details > summary {
 
 .tour-highlight {
   position: fixed;
+  margin: 0;
   border-radius: 8px;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
   outline: 3px solid var(--focus);
@@ -703,6 +704,7 @@ details > summary {
 
 .tour-pop {
   position: fixed;
+  margin: 0;
   z-index: 111;
   background: var(--surface);
   color: var(--fg);
@@ -748,4 +750,8 @@ button.primary kbd.hint {
   color: inherit;
   border-color: currentColor;
   opacity: 0.75;
+}
+
+.solution-score {
+  max-width: 280px;
 }

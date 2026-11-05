@@ -66,13 +66,46 @@ export default function SettingsPage() {
 
       <div className="card stack">
         <h2 style={{ marginTop: 0 }}>Übungen</h2>
-        <label className="toggle">
+        <label className="toggle" style={{ display: 'flex' }}>
           <input type="checkbox" checked={settings.adaptive} onChange={(e) => updateSettings({ adaptive: e.target.checked })} />
           Adaptive Aufgabenauswahl (häufig falsch Beantwortetes kommt öfter dran)
         </label>
-        <label className="toggle">
+        <label className="toggle" style={{ display: 'flex' }}>
           <input type="checkbox" checked={settings.showStats} onChange={(e) => updateSettings({ showStats: e.target.checked })} />
           Statistik während der Übung anzeigen
+        </label>
+        <label className="toggle" style={{ display: 'flex' }}>
+          <input
+            type="checkbox"
+            checked={settings.autoNextCorrect}
+            onChange={(e) => updateSettings({ autoNextCorrect: e.target.checked })}
+          />
+          Nach richtiger Antwort automatisch weiter
+        </label>
+        <label className="toggle" style={{ display: 'flex' }}>
+          <input
+            type="checkbox"
+            checked={settings.autoNextWrong}
+            onChange={(e) => updateSettings({ autoNextWrong: e.target.checked })}
+          />
+          Nach falscher Antwort automatisch weiter
+        </label>
+        <label className="row" style={{ gap: 6 }}>
+          Wartezeit:
+          <input
+            type="number"
+            min={1}
+            max={30}
+            step={1}
+            value={settings.autoNextSeconds}
+            disabled={!settings.autoNextCorrect && !settings.autoNextWrong}
+            onChange={(e) => {
+              const v = Math.round(Number(e.target.value));
+              if (v >= 1 && v <= 30) updateSettings({ autoNextSeconds: v });
+            }}
+            style={{ width: '4.5em' }}
+          />
+          Sekunden
         </label>
       </div>
 

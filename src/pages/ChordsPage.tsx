@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isAudioRunning, play, stopAll } from '../audio/engine';
+import { useAutoNext } from '../components/autoNext';
 import { useHotkeys } from '../components/hotkeys';
 import NoteNamer from '../components/NoteNamer';
+import SolutionScore from '../components/SolutionScore';
 import { DetailTable, LiveStats } from '../components/StatsViews';
 import { useTour } from '../components/Tour';
 import {
@@ -14,7 +16,7 @@ import {
   chordNamingSolution,
   isCorrectChordNaming,
 } from '../music/chords';
-import { germanName, toMidi } from '../music/pitch';
+import { germanName, germanNameWithOctave, toMidi } from '../music/pitch';
 import { ChordTask, chooseAdaptive, makeChordTask } from '../music/tasks';
 import { aggregateStats, getState, recordChord, recordNaming, updateSettings, useAppData } from '../storage/store';
 
@@ -162,6 +164,7 @@ export default function ChordsPage() {
     phase !== 'answer' &&
     typeAnswer === task.type &&
     (!checkInv || invAnswer === task.inversion);
+  const autoNextIn = useAutoNext(phase === 'done', isCorrect && (!namingResult || namingResult.correct), next);
   const solutionLabel = chordAnswerLabel(task.type, checkInv ? task.inversion : null);
   const givenLabel = typeAnswer ? chordAnswerLabel(typeAnswer, level === 2 && typeAnswer !== 'uberm' ? invAnswer : null) : '';
   const stats = aggregateStats(data.stats);
@@ -213,7 +216,7 @@ export default function ChordsPage() {
         </button>
         {phase !== 'answer' && (
           <button onClick={() => next()} autoFocus>
-            Weiter <kbd className="hint">↵</kbd>
+            Weiter{autoNextIn !== null && ` (${autoNextIn} s)`} <kbd className="hint">↵</kbd>
           </button>
         )}
         <span className="spacer" />
@@ -266,6 +269,14 @@ export default function ChordsPage() {
         <div className={`feedback ${isCorrect ? 'ok' : 'err'}`} role="status">
           {isCorrect ? `Richtig: ${solutionLabel}.` : `Falsch – richtig ist: ${solutionLabel} (deine Antwort: ${givenLabel}).`}
         </div>
+      )}
+
+      {phase === 'done' && (
+        <SolutionScore
+          sounds={[task.voicing.notes]}
+          satb
+          ariaLabel={`Lösung: ${task.voicing.notes.map(germanNameWithOctave).join(', ')}`}
+        />
       )}
 
       {phase !== 'answer' && isCorrect && settings.chordNaming && (

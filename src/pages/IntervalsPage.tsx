@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isAudioRunning, play, stopAll } from '../audio/engine';
+import { useAutoNext } from '../components/autoNext';
 import { useHotkeys } from '../components/hotkeys';
 import NoteNamer from '../components/NoteNamer';
+import SolutionScore from '../components/SolutionScore';
 import { DetailTable, LiveStats } from '../components/StatsViews';
 import { useTour } from '../components/Tour';
 import {
@@ -13,7 +15,7 @@ import {
   isCorrectNaming,
   isShortcutPrefix,
 } from '../music/intervals';
-import { germanName, toMidi } from '../music/pitch';
+import { germanName, germanNameWithOctave, toMidi } from '../music/pitch';
 import { IntervalPlayMode, IntervalTask, chooseAdaptive, makeIntervalTask } from '../music/tasks';
 import {
   RANGES,
@@ -96,6 +98,21 @@ export default function IntervalsPage() {
     [playTask],
   );
 
+  // Moduswechsel: dieselbe Aufgabe behalten, nur die Richtung ggf. anpassen
+  const switchMode = useCallback(
+    (newMode: IntervalPlayMode) => {
+      if (autoPlayTimer.current) window.clearTimeout(autoPlayTimer.current);
+      stopAll();
+      const up = newMode !== 'abwaerts';
+      const t = up === task.up ? task : { ...task, start: task.second, second: task.start, up };
+      setTask(t);
+      autoPlayTimer.current = window.setTimeout(() => {
+        if (isAudioRunning()) playTask(t);
+      }, 300);
+    },
+    [task, playTask],
+  );
+
   // Erste Aufgabe automatisch abspielen
   useEffect(() => {
     autoPlayTimer.current = window.setTimeout(() => {
@@ -146,6 +163,8 @@ export default function IntervalsPage() {
     }
   });
 
+  const autoNextIn = useAutoNext(phase === 'done', given === task.interval.id && (!namingResult || namingResult.correct), next);
+
   const directionWord = task.up ? 'aufwärts' : 'abwärts';
   const correctNames = correctSecondNotes(task.start, task.interval, task.up).map((p) => germanName(p));
   const stats = aggregateStats(data.stats);
@@ -168,8 +187,9 @@ export default function IntervalsPage() {
               key={m.id}
               aria-pressed={mode === m.id}
               onClick={() => {
+                if (m.id === mode) return;
                 updateSettings({ intervalMode: m.id });
-                next({ mode: m.id });
+                switchMode(m.id);
               }}
             >
               {m.label}
@@ -187,8 +207,10 @@ export default function IntervalsPage() {
             type="checkbox"
             checked={settings.intervalExtended}
             onChange={(e) => {
-              updateSettings({ intervalExtended: e.target.checked });
-              next({ extended: e.target.checked });
+              const extended = e.target.checked;
+              updateSettings({ intervalExtended: extended });
+              // Nur neue Aufgabe, wenn die aktuelle nicht mehr zur Auswahl gehört
+              if (!extended && task.interval.extended) next({ extended });
             }}
           />
           über die Oktave
@@ -217,7 +239,7 @@ export default function IntervalsPage() {
         </button>
         {phase !== 'answer' && (
           <button onClick={() => next()} autoFocus>
-            Weiter <kbd className="hint">↵</kbd>
+            Weiter{autoNextIn !== null && ` (${autoNextIn} s)`} <kbd className="hint">↵</kbd>
           </button>
         )}
         <span className="spacer" />
@@ -247,6 +269,13 @@ export default function IntervalsPage() {
             ? `Richtig: ${task.interval.long}.`
             : `Falsch – richtig ist: ${task.interval.long} (deine Antwort: ${intervalById(given!).long}).`}
         </div>
+      )}
+
+      {phase === 'done' && (
+        <SolutionScore
+          sounds={mode === 'harmonisch' ? [[task.start, task.second]] : [[task.start], [task.second]]}
+          ariaLabel={`Lösung: ${germanNameWithOctave(task.start)} und ${germanNameWithOctave(task.second)}`}
+        />
       )}
 
       {phase !== 'answer' && given === task.interval.id && settings.intervalNaming && (
