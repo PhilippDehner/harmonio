@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Piano from '../components/Piano';
 import { useHotkeys } from '../components/hotkeys';
 import ScoreView from '../components/ScoreView';
@@ -43,6 +43,49 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
   const [cursorTick, setCursorTick] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pianoVisible, setPianoVisible] = useState(true);
+
+  // Rückgängig: Verlauf der eigenen Änderungen (wird bei Änderung von außen, z. B. „Neu anfangen“, verworfen)
+  const history = useRef<DNote[][][]>([]);
+  const lastCommitted = useRef<DNote[][] | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  if (lastCommitted.current !== input && history.current.length) {
+    history.current = [];
+    if (canUndo) setCanUndo(false);
+  }
+  lastCommitted.current = input;
+
+  function commit(next: DNote[][]) {
+    history.current = [...history.current, input].slice(-100);
+    lastCommitted.current = next;
+    setCanUndo(true);
+    setInput(next);
+  }
+
+  function undo() {
+    const prev = history.current.pop();
+    if (!prev) return;
+    lastCommitted.current = prev;
+    setCanUndo(history.current.length > 0);
+    setInput(prev);
+    setSelectedId(null);
+    setPicked(false);
+    setCursorTick(null);
+  }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        const t = e.target as HTMLElement | null;
+        if (t && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && (t as HTMLInputElement).type !== 'checkbox'))) return;
+        e.preventDefault();
+        undoRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const undoRef = useRef(undo);
+  undoRef.current = undo;
 
   const m = d.measures[measure];
   const dur: Duration = { base, dotted, triplet };
@@ -107,7 +150,7 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
 
   function setVoice(v: number, notes: DNote[]) {
     const next = input.map((x, i) => (i === v ? notes : x));
-    setInput(next);
+    commit(next);
   }
 
   /* ---------- Melodie (ein-/zweistimmig) ---------- */
@@ -155,7 +198,7 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
       bass[measure] = bass[measure] && diatonicIndex(bass[measure]!) === di ? null : pitch;
     }
     const voices = distributeChorale(upper, bass, d.measures, true);
-    setInput(voices);
+    commit(voices);
     const sel = voices.flat().find((n) => n.start === m.start && diatonicIndex(n.pitch) === di);
     setSelectedId(sel?.id ?? null);
   }
@@ -225,7 +268,7 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
         if (idx >= 0) upper[ci][idx] = p;
       }
       const voices = distributeChorale(upper, bass, d.measures, true);
-      setInput(voices);
+      commit(voices);
       const sel = voices.flat().find((n) => n.start === selected.start && diatonicIndex(n.pitch) === diatonicIndex(p) && n.pitch.alter === p.alter);
       setSelectedId(sel?.id ?? null);
       return;
@@ -429,6 +472,9 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
         )}
         <button disabled={!selected || selected.given} onClick={deleteSelected}>
           Löschen <kbd className="hint">Entf</kbd>
+        </button>
+        <button disabled={!canUndo} onClick={undo} aria-label="Rückgängig">
+          ↶ Rückgängig <kbd className="hint">Strg+Z</kbd>
         </button>
       </div>
 
