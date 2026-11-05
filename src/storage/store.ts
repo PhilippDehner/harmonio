@@ -61,7 +61,7 @@ export const DEFAULT_SETTINGS: Settings = {
   intervalMode: 'aufwaerts',
   intervalExtended: false,
   intervalNaming: false,
-  chordLevel: 1,
+  chordLevel: 2,
   chordNaming: false,
   adaptive: false,
   showStats: true,
