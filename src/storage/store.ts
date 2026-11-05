@@ -47,6 +47,12 @@ export interface Settings {
   adaptive: boolean;
   showStats: boolean;
   inputMode: InputMode;
+  /** Nach richtiger Antwort automatisch zur nächsten Aufgabe */
+  autoNextCorrect: boolean;
+  /** Nach falscher Antwort automatisch zur nächsten Aufgabe */
+  autoNextWrong: boolean;
+  /** Wartezeit in Sekunden für beide Fälle */
+  autoNextSeconds: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -60,6 +66,9 @@ export const DEFAULT_SETTINGS: Settings = {
   adaptive: false,
   showStats: true,
   inputMode: 'notenblatt',
+  autoNextCorrect: false,
+  autoNextWrong: false,
+  autoNextSeconds: 2,
 };
 
 export const RANGES: Record<RangeLevel, { label: string; midi: [number, number]; text: string }> = {

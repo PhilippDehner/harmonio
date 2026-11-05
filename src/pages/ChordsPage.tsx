@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isAudioRunning, play, stopAll } from '../audio/engine';
+import { useAutoNext } from '../components/autoNext';
 import { useHotkeys } from '../components/hotkeys';
 import NoteNamer from '../components/NoteNamer';
 import { DetailTable, LiveStats } from '../components/StatsViews';
@@ -162,6 +163,7 @@ export default function ChordsPage() {
     phase !== 'answer' &&
     typeAnswer === task.type &&
     (!checkInv || invAnswer === task.inversion);
+  const autoNextIn = useAutoNext(phase === 'done', isCorrect && (!namingResult || namingResult.correct), next);
   const solutionLabel = chordAnswerLabel(task.type, checkInv ? task.inversion : null);
   const givenLabel = typeAnswer ? chordAnswerLabel(typeAnswer, level === 2 && typeAnswer !== 'uberm' ? invAnswer : null) : '';
   const stats = aggregateStats(data.stats);
@@ -213,7 +215,7 @@ export default function ChordsPage() {
         </button>
         {phase !== 'answer' && (
           <button onClick={() => next()} autoFocus>
-            Weiter <kbd className="hint">↵</kbd>
+            Weiter{autoNextIn !== null && ` (${autoNextIn} s)`} <kbd className="hint">↵</kbd>
           </button>
         )}
         <span className="spacer" />
