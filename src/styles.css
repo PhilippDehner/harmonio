@@ -504,7 +504,10 @@ details > summary {
 .dict-list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  /* nur unten/seitlich zurücksetzen, damit der Abstand aus .stack greift */
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 8px;
