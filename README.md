@@ -51,5 +51,5 @@ GitHub Actions führt bei jedem Push Typprüfung, Tests und Build aus. Bei Pushe
 
 ## Credits und Lizenz
 
-- Klavier-Samples: Salamander Grand Piano von Alexander Holm, Lizenz CC BY 3.0 (bezogen über [Tone.js audio](https://github.com/Tonejs/audio))
-- Code und Diktate: MIT-Lizenz, siehe [LICENSE](LICENSE)
+- Klavier-Samples: [Salamander Grand Piano V3](https://archive.org/details/SalamanderGrandPianoV3) von Alexander Holm, Lizenz [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Die MP3-Fassung stammt aus [Tone.js audio](https://github.com/Tonejs/audio/tree/master/salamander) (ins MP3-Format umgewandelt). Lizenztext und Angaben: `public/samples/salamander/LICENSE.txt` und `README.txt`
+- Code und Diktate: MIT-Lizenz (gilt nicht für die Klavier-Samples), siehe [LICENSE](LICENSE)

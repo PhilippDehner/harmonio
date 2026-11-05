@@ -47,7 +47,11 @@ export default function Layout() {
           Kontakt zum Entwickler: <a href={GITHUB_URL}>GitHub</a> · <a href={LINKEDIN_URL}>LinkedIn</a> ·{' '}
           <a href={REPO_URL}>Quellcode</a>
         </p>
-        <p>Klavier-Samples: Salamander Grand Piano von Alexander Holm, Lizenz CC BY 3.0</p>
+        <p>
+          Klavier-Samples:{' '}
+          <a href="https://archive.org/details/SalamanderGrandPianoV3">Salamander Grand Piano</a> von Alexander Holm,
+          Lizenz <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>
+        </p>
       </footer>
       {isExercise && <AudioHint />}
     </>
