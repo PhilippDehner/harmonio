@@ -202,8 +202,10 @@ export default function IntervalsPage() {
             type="checkbox"
             checked={settings.intervalExtended}
             onChange={(e) => {
-              updateSettings({ intervalExtended: e.target.checked });
-              next({ extended: e.target.checked });
+              const extended = e.target.checked;
+              updateSettings({ intervalExtended: extended });
+              // Nur neue Aufgabe, wenn die aktuelle nicht mehr zur Auswahl gehört
+              if (!extended && task.interval.extended) next({ extended });
             }}
           />
           über die Oktave
