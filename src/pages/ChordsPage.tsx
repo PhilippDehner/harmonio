@@ -17,7 +17,7 @@ import {
   isCorrectChordNaming,
 } from '../music/chords';
 import { germanName, germanNameWithOctave, toMidi } from '../music/pitch';
-import { ChordTask, chooseAdaptive, makeChordTask } from '../music/tasks';
+import { ChordTask, answerChordMidi, chooseAdaptive, makeChordTask } from '../music/tasks';
 import { aggregateStats, getState, recordChord, recordNaming, updateSettings, useAppData } from '../storage/store';
 
 type Phase = 'answer' | 'naming' | 'done';
@@ -167,6 +167,12 @@ export default function ChordsPage() {
   const autoNextIn = useAutoNext(phase === 'done', isCorrect && (!namingResult || namingResult.correct), next);
   const solutionLabel = chordAnswerLabel(task.type, checkInv ? task.inversion : null);
   const givenLabel = typeAnswer ? chordAnswerLabel(typeAnswer, level === 2 && typeAnswer !== 'uberm' ? invAnswer : null) : '';
+  const playGiven = () => {
+    if (!typeAnswer) return;
+    const inv = level === 2 && typeAnswer !== 'uberm' && invAnswer ? invAnswer : task.inversion;
+    stopAll();
+    void play({ sounds: [{ time: 0, midi: answerChordMidi(task, typeAnswer, inv) }] });
+  };
   const stats = aggregateStats(data.stats);
   const naming = chordNamingSolution(task.root, task.type);
 
@@ -176,7 +182,7 @@ export default function ChordsPage() {
         <h1 style={{ margin: 0 }}>Akkorde</h1>
         <span className="spacer" />
         <button onClick={tour.start} aria-label="Hilfe: Tour starten">
-          ? Hilfe
+          Hilfe
         </button>
       </div>
 
@@ -214,6 +220,7 @@ export default function ChordsPage() {
         <button id="ch-play" className="primary" onClick={() => playTask(task)}>
           ▶ Abspielen <kbd className="hint">Leertaste</kbd>
         </button>
+        {phase !== 'answer' && !isCorrect && <button onClick={playGiven}>▶ Deine Antwort</button>}
         {phase !== 'answer' && (
           <button onClick={() => next()} autoFocus>
             Weiter{autoNextIn !== null && ` (${autoNextIn} s)`} <kbd className="hint">↵</kbd>

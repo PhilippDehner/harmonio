@@ -25,7 +25,10 @@ export function voiceSounds(voices: DNote[][], tempo: number, fromTick = 0, offs
   return events.sort((a, b) => a.time - b.time);
 }
 
-/** Vierstimmige Kadenz I–IV–V–I (Moll: i–iv–V–i) in enger Lage. */
+/**
+ * Vierstimmige Kadenz I–IV–V–I (Moll: i–iv–V–i) in enger Lage:
+ * I in Oktavlage, IV in Quintlage, V in Terzlage, I in Oktavlage.
+ */
 export function cadenceChords(keyFifths: number, minor: boolean): number[][] {
   const tonicName = keyTonic(keyFifths, minor);
   // Grundton so legen, dass der Bass zwischen F und e liegt
@@ -33,33 +36,25 @@ export function cadenceChords(keyFifths: number, minor: boolean): number[][] {
   if (toMidi(tonic) > 52) tonic = { ...tonic, octave: 2 };
   const subdominant = transpose(tonic, 3, 5);
   const dominant = transpose(tonic, 4, 7);
-  const triad = (root: Pitch, quality: 'dur' | 'moll') => chordTones(root, quality);
   const tQ = minor ? 'moll' : 'dur';
-  const chords = [triad(tonic, tQ), triad(subdominant, tQ), triad(dominant, 'dur'), triad(tonic, tQ)];
-  // Oberstimmen in enger Lage um c'–g'' herum, möglichst nah am vorherigen Akkord
-  let prev: number[] = [];
-  return chords.map((c) => {
-    const bass = toMidi(c[0]);
+  const chords = [chordTones(tonic, tQ), chordTones(subdominant, tQ), chordTones(dominant, 'dur'), chordTones(tonic, tQ)];
+  // Index des Akkordtons im Sopran: 0 = Oktavlage, 1 = Terzlage, 2 = Quintlage
+  const sopranoTone = [0, 2, 1, 0];
+  // Sopran des ersten Akkords zwischen f' und e'', danach stimmführungsnah
+  let soprano = 65 + ((toMidi(tonic) % 12) - 65 % 12 + 12) % 12;
+  return chords.map((c, i) => {
     const pcs = c.map((p) => toMidi(p) % 12);
-    let best: number[] = [];
-    let bestCost = Infinity;
-    for (let low = 57; low <= 69; low++) {
-      if (!pcs.includes(low % 12)) continue;
-      const upper: number[] = [low];
-      let cur = low;
-      for (let k = 0; k < 2; k++) {
-        cur++;
-        while (!pcs.includes(cur % 12) || upper.some((u) => u % 12 === cur % 12)) cur++;
-        upper.push(cur);
-      }
-      const cost = prev.length ? upper.reduce((s, u, i) => s + Math.abs(u - prev[i]), 0) : Math.abs(low - 62);
-      if (cost < bestCost) {
-        bestCost = cost;
-        best = upper;
-      }
+    const spc = pcs[sopranoTone[i]];
+    if (i > 0) {
+      const below = soprano - (((soprano - spc) % 12) + 12) % 12;
+      soprano = soprano - below <= 6 ? below : below + 12;
     }
-    prev = best;
-    return [bass, ...best];
+    // Übrige Akkordtöne in enger Lage direkt unter dem Sopran
+    const inner = pcs
+      .filter((_, k) => k !== sopranoTone[i])
+      .map((pc) => soprano - ((((soprano - pc) % 12) + 12) % 12 || 12))
+      .sort((a, b) => a - b);
+    return [toMidi(c[0]), ...inner, soprano];
   });
 }
 
@@ -94,7 +89,7 @@ export function countInLength(d: Dictation): number {
 /** Kadenz und Einzählen vor dem ersten Abspielen. */
 export function introPlan(d: Dictation): IntroPlan {
   const spt = secondsPerTick(d.tempo);
-  const chordLen = 2 * TICKS_PER_QUARTER * spt;
+  const chordLen = Math.min(TICKS_PER_QUARTER * spt, 0.6);
   const sounds: SoundEvent[] = cadenceChords(d.keyFifths, d.minor).map((midi, i) => ({
     time: i * chordLen,
     midi,
