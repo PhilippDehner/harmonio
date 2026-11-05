@@ -146,11 +146,15 @@ export default function ChordsPage() {
     const k = e.key.toUpperCase();
     const type = CHORD_TYPES.find((t) => t.key === k || (t.id === 'uberm' && k === 'U'));
     if (type) {
+      e.preventDefault();
       chooseType(type.id);
       return;
     }
     const inv = INVERSIONS.find((i) => i.key === e.key);
-    if (inv && level === 2) chooseInversion(inv.id);
+    if (inv && level === 2) {
+      e.preventDefault();
+      chooseInversion(inv.id);
+    }
   });
 
   const checkInv = level === 2 && task.type !== 'uberm';
