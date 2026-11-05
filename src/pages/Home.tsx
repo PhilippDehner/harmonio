@@ -16,8 +16,7 @@ export default function Home() {
       <h1>Willkommen bei Harmonio</h1>
       <p>
         Harmonio hilft dir, dein musikalisches Gehör zu trainieren: Intervalle und Akkorde erkennen und Melodien
-        oder vierstimmige Sätze nach Gehör aufschreiben. Wähle eine Übung – der Ton wird mit dem ersten Klick
-        freigeschaltet. Deine Einstellungen und Fortschritte werden nur in deinem Browser gespeichert.
+        oder vierstimmige Sätze nach Gehör aufschreiben. Wähle eine Übung. Deine Einstellungen und Fortschritte werden nur in deinem Browser gespeichert.
       </p>
       <div className="tiles">
         {TILES.map((t) => (
