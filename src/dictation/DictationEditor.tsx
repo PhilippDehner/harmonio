@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Piano from '../components/Piano';
+import { useHotkeys } from '../components/hotkeys';
 import ScoreView from '../components/ScoreView';
 import { Pitch, allSpellings, diatonicIndex, fromDiatonicIndex, keyAlter, spellForKey, toMidi, ACCIDENTAL_SYMBOLS } from '../music/pitch';
 import { StaffDef } from '../score/render';
@@ -227,6 +228,46 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
     return { ...p, alter: keyAlter(p.step, d.keyFifths) };
   };
 
+  function enharmonic(n: DNote): Pitch {
+    const opts = allSpellings(toMidi(n.pitch));
+    const i = opts.findIndex((o) => o.step === n.pitch.step && o.alter === n.pitch.alter);
+    return opts[(i + 1) % opts.length];
+  }
+
+  const BASE_KEYS: Record<string, BaseValue> = { '1': 'w', '2': 'h', '4': 'q', '8': '8' };
+
+  useHotkeys((e, key) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      editSelected((n) => step(n, e.key === 'ArrowUp' ? 1 : -1));
+    } else if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      e.preventDefault();
+      moveSelected(e.key === 'ArrowLeft' ? -12 : 12);
+    } else if (key === 'Delete' || key === 'Backspace') {
+      e.preventDefault();
+      deleteSelected();
+    } else if (key === '+' || key === '#') {
+      editSelected((n) => ({ ...n.pitch, alter: Math.min(2, n.pitch.alter + 1) }));
+    } else if (key === '-') {
+      editSelected((n) => ({ ...n.pitch, alter: Math.max(-2, n.pitch.alter - 1) }));
+    } else if (key === 'n' || key === 'N') {
+      editSelected((n) => ({ ...n.pitch, alter: 0 }));
+    } else if (key === 'e' || key === 'E') {
+      editSelected(enharmonic);
+    } else if (key === 'PageUp' || key === 'PageDown') {
+      if (staves.length > 1) {
+        e.preventDefault();
+        setActiveStaff(key === 'PageUp' ? 0 : 1);
+      }
+    } else if (!chorale && BASE_KEYS[key]) {
+      setBase(BASE_KEYS[key]);
+    } else if (!chorale && key === '.') {
+      setDotted((v) => !v);
+    } else if (!chorale && (key === 't' || key === 'T')) {
+      setTriplet((v) => !v);
+    }
+  });
+
   const label = chorale ? 'Akkord' : 'Takt';
   const hasPickup = !chorale && d.measures.length > 1 && d.measures[0].ticks < d.measures[1].ticks;
 
@@ -251,10 +292,10 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
         {staves.length > 1 && (
           <div className="segmented" role="group" aria-label="Zeile wählen">
             <button aria-pressed={activeStaff === 0} onClick={() => setActiveStaff(0)}>
-              obere Zeile
+              obere Zeile <kbd className="hint">Bild↑</kbd>
             </button>
             <button aria-pressed={activeStaff === 1} onClick={() => setActiveStaff(1)}>
-              untere Zeile
+              untere Zeile <kbd className="hint">Bild↓</kbd>
             </button>
           </div>
         )}
@@ -265,15 +306,15 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
           <div className="segmented">
             {BASES.map((b) => (
               <button key={b} aria-pressed={base === b} onClick={() => setBase(b)}>
-                {BASE_LABELS[b]}
+                {BASE_LABELS[b]} <kbd className="hint">{{ w: '1', h: '2', q: '4', '8': '8' }[b]}</kbd>
               </button>
             ))}
           </div>
           <label className="toggle">
-            <input type="checkbox" checked={dotted} onChange={(e) => setDotted(e.target.checked)} /> punktiert
+            <input type="checkbox" checked={dotted} onChange={(e) => setDotted(e.target.checked)} /> punktiert <kbd className="hint">.</kbd>
           </label>
           <label className="toggle">
-            <input type="checkbox" checked={triplet} onChange={(e) => setTriplet(e.target.checked)} /> Triole
+            <input type="checkbox" checked={triplet} onChange={(e) => setTriplet(e.target.checked)} /> Triole <kbd className="hint">t</kbd>
           </label>
         </div>
       )}
@@ -319,10 +360,10 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
       <div className="toolbar" role="group" aria-label="Ausgewählte Note bearbeiten">
         <span className="muted small">Auswahl:</span>
         <button disabled={!selected || selected.given} onClick={() => editSelected((n) => step(n, 1))} aria-label="Höher">
-          ▲
+          ▲ <kbd className="hint">↑</kbd>
         </button>
         <button disabled={!selected || selected.given} onClick={() => editSelected((n) => step(n, -1))} aria-label="Tiefer">
-          ▼
+          ▼ <kbd className="hint">↓</kbd>
         </button>
         {[-2, -1, 0, 1, 2].map((a) => (
           <button
@@ -332,32 +373,27 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
             aria-label={['Doppel-B', 'B', 'Auflösungszeichen', 'Kreuz', 'Doppelkreuz'][a + 2]}
           >
             {ACCIDENTAL_SYMBOLS[a]}
+            {a === 0 && <kbd className="hint">n</kbd>}
           </button>
         ))}
         <button
           disabled={!selected || selected.given}
-          onClick={() =>
-            editSelected((n) => {
-              const opts = allSpellings(toMidi(n.pitch));
-              const i = opts.findIndex((o) => o.step === n.pitch.step && o.alter === n.pitch.alter);
-              return opts[(i + 1) % opts.length];
-            })
-          }
+          onClick={() => editSelected(enharmonic)}
         >
-          enharm.
+          enharm. <kbd className="hint">e</kbd>
         </button>
         {!chorale && (
           <>
             <button disabled={!selected || selected.given} onClick={() => moveSelected(-12)} aria-label="Früher">
-              ⇠
+              ⇠ <kbd className="hint">⇧←</kbd>
             </button>
             <button disabled={!selected || selected.given} onClick={() => moveSelected(12)} aria-label="Später">
-              ⇢
+              ⇢ <kbd className="hint">⇧→</kbd>
             </button>
           </>
         )}
         <button disabled={!selected || selected.given} onClick={deleteSelected}>
-          Löschen
+          Löschen <kbd className="hint">Entf</kbd>
         </button>
       </div>
 
