@@ -249,7 +249,7 @@ function DictationPage() {
     if (e.key === ' ') {
       e.preventDefault();
       startPlayback();
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey) {
       e.preventDefault();
       const dir = e.key === 'ArrowLeft' ? -1 : 1;
       if (mode === 'papier') {
