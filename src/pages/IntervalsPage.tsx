@@ -175,7 +175,7 @@ export default function IntervalsPage() {
         <h1 style={{ margin: 0 }}>Intervalle</h1>
         <span className="spacer" />
         <button onClick={tour.start} aria-label="Hilfe: Tour starten">
-          ? Hilfe
+          Hilfe
         </button>
       </div>
 

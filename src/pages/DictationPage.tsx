@@ -294,7 +294,7 @@ function DictationPage() {
           Liste
         </Link>
         <button onClick={tour.start} aria-label="Hilfe: Tour starten">
-          ? Hilfe
+          Hilfe
         </button>
       </div>
 

@@ -176,7 +176,7 @@ export default function ChordsPage() {
         <h1 style={{ margin: 0 }}>Akkorde</h1>
         <span className="spacer" />
         <button onClick={tour.start} aria-label="Hilfe: Tour starten">
-          ? Hilfe
+          Hilfe
         </button>
       </div>
 
