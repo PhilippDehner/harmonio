@@ -147,6 +147,7 @@ export default function IntervalsPage() {
     if (phase !== 'answer') return;
     const k = e.key === 'T' ? 'T' : e.key.toLowerCase();
     if (!/^[0-9kgt]$/i.test(k)) return;
+    e.preventDefault();
     const buf = bufferRef.current + k;
     const hit = intervalFromShortcut(buf, settings.intervalExtended);
     const isPrefix = isShortcutPrefix(buf, settings.intervalExtended);
