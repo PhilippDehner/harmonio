@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isAudioRunning, play, stopAll } from '../audio/engine';
+import { useAutoNext } from '../components/autoNext';
 import { useHotkeys } from '../components/hotkeys';
 import NoteNamer from '../components/NoteNamer';
 import { DetailTable, LiveStats } from '../components/StatsViews';
@@ -161,6 +162,8 @@ export default function IntervalsPage() {
     }
   });
 
+  const autoNextIn = useAutoNext(phase === 'done', given === task.interval.id && (!namingResult || namingResult.correct), next);
+
   const directionWord = task.up ? 'aufwärts' : 'abwärts';
   const correctNames = correctSecondNotes(task.start, task.interval, task.up).map((p) => germanName(p));
   const stats = aggregateStats(data.stats);
@@ -235,7 +238,7 @@ export default function IntervalsPage() {
         </button>
         {phase !== 'answer' && (
           <button onClick={() => next()} autoFocus>
-            Weiter <kbd className="hint">↵</kbd>
+            Weiter{autoNextIn !== null && ` (${autoNextIn} s)`} <kbd className="hint">↵</kbd>
           </button>
         )}
         <span className="spacer" />
