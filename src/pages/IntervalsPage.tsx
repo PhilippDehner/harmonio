@@ -80,6 +80,19 @@ export default function IntervalsPage() {
     }
   }, []);
 
+  // Falsche Antwort vom selben Ausgangston abspielen
+  const playGiven = useCallback(() => {
+    if (!given) return;
+    const a = toMidi(task.start);
+    const b = a + (task.up ? 1 : -1) * intervalById(given).semitones;
+    stopAll();
+    if (getState().settings.intervalMode === 'harmonisch') {
+      void play({ sounds: [{ time: 0, midi: [a, b] }] });
+    } else {
+      void play({ sounds: [{ time: 0, midi: [a] }, { time: 1.0, midi: [b] }] });
+    }
+  }, [given, task]);
+
   const next = useCallback(
     (opts?: { mode?: IntervalPlayMode; extended?: boolean }) => {
       if (autoPlayTimer.current) window.clearTimeout(autoPlayTimer.current);
@@ -237,6 +250,9 @@ export default function IntervalsPage() {
         <button id="iv-play" className="primary" onClick={() => playTask(task)}>
           ▶ Abspielen <kbd className="hint">Leertaste</kbd>
         </button>
+        {phase !== 'answer' && given !== task.interval.id && (
+          <button onClick={playGiven}>▶ Deine Antwort</button>
+        )}
         {phase !== 'answer' && (
           <button onClick={() => next()} autoFocus>
             Weiter{autoNextIn !== null && ` (${autoNextIn} s)`} <kbd className="hint">↵</kbd>

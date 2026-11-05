@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { germanName, toMidi } from '../music/pitch';
 import { allVoicings, chordTones, isCorrectChordNaming, VOICE_RANGES } from '../music/chords';
-import { makeChordTask } from '../music/tasks';
+import { answerChordMidi, makeChordTask } from '../music/tasks';
 
 const P = (step: number, alter: number, octave: number) => ({ step, alter, octave });
 
@@ -38,5 +38,19 @@ describe('Akkorde', () => {
   it('Benennung', () => {
     expect(isCorrectChordNaming([{ step: 6, alter: 1 }, { step: 1, alter: 2 }], P(4, 1, 3), 'uberm')).toBe(true);
     expect(isCorrectChordNaming([{ step: 0, alter: 0 }, { step: 1, alter: 2 }], P(4, 1, 3), 'uberm')).toBe(false);
+  });
+});
+
+describe('Falsche Akkordantwort abspielen', () => {
+  it('gleicher Grundton, gewählter Typ und Umkehrung', () => {
+    for (let i = 0; i < 30; i++) {
+      const task = makeChordTask('dur', 'grund');
+      const m = answerChordMidi(task, 'moll', 'sext');
+      const pcs = new Set(chordTones(task.root, 'moll').map((p) => toMidi(p) % 12));
+      expect(m.length).toBe(4);
+      m.forEach((x) => expect(pcs.has(x % 12)).toBe(true));
+      // Bass = Terz des Mollakkords
+      expect(m[3] % 12).toBe(toMidi(chordTones(task.root, 'moll')[1]) % 12);
+    }
   });
 });
