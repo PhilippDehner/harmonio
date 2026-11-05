@@ -136,3 +136,54 @@ export function splitTicks(ticks: number): Duration[] {
   }
   return out;
 }
+
+export interface RestSlot {
+  /** Beginn in Ticks ab Stückanfang */
+  start: number;
+  dur: Duration;
+  /** Ganztaktpause (wird mittig gesetzt) */
+  wholeMeasure: boolean;
+}
+
+const REST_OPTIONS: Duration[] = [
+  { base: 'w', dotted: false, triplet: false },
+  { base: 'h', dotted: false, triplet: false },
+  { base: 'q', dotted: false, triplet: false },
+  { base: '8', dotted: false, triplet: false },
+  { base: '8', dotted: false, triplet: true },
+];
+
+/**
+ * Pausen für die Lücken eines Taktes. `notes` sind die Noten eines Systems
+ * (mehrere Stimmen erlaubt). Ein leerer Takt erhält eine Ganztaktpause,
+ * sonst werden Lücken in auf den Takt ausgerichtete Pausenwerte zerlegt.
+ */
+export function restsInMeasure(notes: DNote[], m: Measure): RestSlot[] {
+  const end = m.start + m.ticks;
+  const inMeasure = sortNotes(notes.filter((n) => n.start >= m.start && n.start < end));
+  if (inMeasure.length === 0) {
+    return [{ start: m.start, dur: { base: 'w', dotted: false, triplet: false }, wholeMeasure: true }];
+  }
+  const gaps: [number, number][] = [];
+  let pos = m.start;
+  for (const n of inMeasure) {
+    if (n.start > pos) gaps.push([pos, n.start]);
+    pos = Math.max(pos, noteEnd(n));
+  }
+  if (pos < end) gaps.push([pos, end]);
+  const out: RestSlot[] = [];
+  for (const [from, to] of gaps) {
+    let p = from;
+    while (p < to) {
+      const rem = to - p;
+      const rel = p - m.start;
+      const d =
+        REST_OPTIONS.find((o) => durationTicks(o) <= rem && rel % durationTicks(o) === 0) ??
+        REST_OPTIONS.find((o) => durationTicks(o) <= rem);
+      if (!d) break;
+      out.push({ start: p, dur: d, wholeMeasure: false });
+      p += durationTicks(d);
+    }
+  }
+  return out;
+}

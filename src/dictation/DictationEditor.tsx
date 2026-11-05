@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Piano from '../components/Piano';
 import { useHotkeys } from '../components/hotkeys';
 import ScoreView from '../components/ScoreView';
 import { Pitch, allSpellings, diatonicIndex, fromDiatonicIndex, keyAlter, spellForKey, toMidi, ACCIDENTAL_SYMBOLS } from '../music/pitch';
 import { StaffDef } from '../score/render';
-import { distributeChorale, deleteNote, insertNote, moveNoteInTime, updatePitch } from './editing';
+import { changeDuration, distributeChorale, deleteNote, insertNote, moveNoteInTime, updatePitch } from './editing';
 import { BaseValue, BASE_LABELS, DNote, Dictation, Duration, durationTicks, noteEnd } from './model';
 
 export function staffDefs(d: Dictation): StaffDef[] {
@@ -38,9 +38,54 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
   const [triplet, setTriplet] = useState(false);
   const [activeStaff, setActiveStaff] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** Note wurde gezielt angetippt (nicht nur gerade eingegeben): Notenwert-Wahl ändert ihre Dauer */
+  const [picked, setPicked] = useState(false);
   const [cursorTick, setCursorTick] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pianoVisible, setPianoVisible] = useState(true);
+
+  // Rückgängig: Verlauf der eigenen Änderungen (wird bei Änderung von außen, z. B. „Neu anfangen“, verworfen)
+  const history = useRef<DNote[][][]>([]);
+  const lastCommitted = useRef<DNote[][] | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  if (lastCommitted.current !== input && history.current.length) {
+    history.current = [];
+    if (canUndo) setCanUndo(false);
+  }
+  lastCommitted.current = input;
+
+  function commit(next: DNote[][]) {
+    history.current = [...history.current, input].slice(-100);
+    lastCommitted.current = next;
+    setCanUndo(true);
+    setInput(next);
+  }
+
+  function undo() {
+    const prev = history.current.pop();
+    if (!prev) return;
+    lastCommitted.current = prev;
+    setCanUndo(history.current.length > 0);
+    setInput(prev);
+    setSelectedId(null);
+    setPicked(false);
+    setCursorTick(null);
+  }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        const t = e.target as HTMLElement | null;
+        if (t && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && (t as HTMLInputElement).type !== 'checkbox'))) return;
+        e.preventDefault();
+        undoRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const undoRef = useRef(undo);
+  undoRef.current = undo;
 
   const m = d.measures[measure];
   const dur: Duration = { base, dotted, triplet };
@@ -48,6 +93,36 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
   const allNotes = input.flat();
   const selected = allNotes.find((n) => n.id === selectedId) ?? null;
   const voiceOfStaff = (s: number) => staves[s].voices[0];
+  const editTarget = !chorale && picked && selected && !selected.given ? selected : null;
+  /** In der Werkzeugleiste angezeigter Notenwert */
+  const shownDur = editTarget ? editTarget.dur : dur;
+
+  function selectNote(id: string | null, isPicked = false) {
+    setSelectedId(id);
+    setPicked(isPicked && id !== null);
+  }
+
+  /** Notenwert wählen: ändert die angetippte Note oder den Wert für die nächste Eingabe. */
+  function chooseDuration(change: Partial<Duration> | ((d: Duration) => Partial<Duration>)) {
+    const target = editTarget;
+    const base = target ? target.dur : dur;
+    const next = { ...base, ...(typeof change === 'function' ? change(base) : change) };
+    if (!target) {
+      setBase(next.base);
+      setDotted(next.dotted);
+      setTriplet(next.triplet);
+      return;
+    }
+    const v = input.findIndex((voice) => voice.some((n) => n.id === target.id));
+    const r = changeDuration(input[v], d.measures, target.id, next);
+    if (!r.ok) {
+      flash(r.message);
+      return;
+    }
+    setVoice(v, r.notes);
+    const end = target.start + durationTicks(next);
+    setCursorTick(end < m.start + m.ticks ? end : null);
+  }
 
   // Eingabeposition: gewählt oder Ende der letzten Note im Takt
   const cursor = useMemo(() => {
@@ -75,7 +150,7 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
 
   function setVoice(v: number, notes: DNote[]) {
     const next = input.map((x, i) => (i === v ? notes : x));
-    setInput(next);
+    commit(next);
   }
 
   /* ---------- Melodie (ein-/zweistimmig) ---------- */
@@ -88,7 +163,8 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
       return;
     }
     setVoice(v, r.notes);
-    setSelectedId(r.id);
+    selectNote(r.id);
+    setDotted(false);
     const end = tick + durationTicks(dur);
     if (end >= m.start + m.ticks && measure < d.measures.length - 1) {
       setCursorTick(null);
@@ -122,7 +198,7 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
       bass[measure] = bass[measure] && diatonicIndex(bass[measure]!) === di ? null : pitch;
     }
     const voices = distributeChorale(upper, bass, d.measures, true);
-    setInput(voices);
+    commit(voices);
     const sel = voices.flat().find((n) => n.start === m.start && diatonicIndex(n.pitch) === di);
     setSelectedId(sel?.id ?? null);
   }
@@ -150,7 +226,8 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
       if (mode === 'notenblatt' && selectedId === at.id && !at.given) {
         const p = { ...hit.pitch, alter: contextAlter(hit.pitch.step, hit.pitch.octave, hit.staff, tick) };
         setVoice(v, updatePitch(input[v], at.id, p));
-      } else setSelectedId(at.id);
+      }
+      selectNote(at.id, true);
       setCursorTick(noteEnd(at) < m.start + m.ticks ? noteEnd(at) : null);
       return;
     }
@@ -159,7 +236,7 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
       placeNote(hit.staff, tick, p);
     } else {
       setCursorTick(tick);
-      setSelectedId(null);
+      selectNote(null);
     }
   }
 
@@ -191,7 +268,7 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
         if (idx >= 0) upper[ci][idx] = p;
       }
       const voices = distributeChorale(upper, bass, d.measures, true);
-      setInput(voices);
+      commit(voices);
       const sel = voices.flat().find((n) => n.start === selected.start && diatonicIndex(n.pitch) === diatonicIndex(p) && n.pitch.alter === p.alter);
       setSelectedId(sel?.id ?? null);
       return;
@@ -211,7 +288,7 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
     const v = input.findIndex((voice) => voice.some((n) => n.id === selected.id));
     setVoice(v, deleteNote(input[v], selected.id));
     setCursorTick(selected.start);
-    setSelectedId(null);
+    selectNote(null);
   }
 
   function moveSelected(delta: number) {
@@ -260,11 +337,11 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
         setActiveStaff(key === 'PageUp' ? 0 : 1);
       }
     } else if (!chorale && BASE_KEYS[key]) {
-      setBase(BASE_KEYS[key]);
+      chooseDuration({ base: BASE_KEYS[key] });
     } else if (!chorale && key === '.') {
-      setDotted((v) => !v);
+      chooseDuration((x) => ({ dotted: !x.dotted }));
     } else if (!chorale && (key === 't' || key === 'T')) {
-      setTriplet((v) => !v);
+      chooseDuration((x) => ({ triplet: !x.triplet }));
     }
   });
 
@@ -305,16 +382,16 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
         <div className="toolbar" role="group" aria-label="Notenwert">
           <div className="segmented">
             {BASES.map((b) => (
-              <button key={b} aria-pressed={base === b} onClick={() => setBase(b)}>
+              <button key={b} aria-pressed={shownDur.base === b} onClick={() => chooseDuration({ base: b })}>
                 {BASE_LABELS[b]} <kbd className="hint">{{ w: '1', h: '2', q: '4', '8': '8' }[b]}</kbd>
               </button>
             ))}
           </div>
           <label className="toggle">
-            <input type="checkbox" checked={dotted} onChange={(e) => setDotted(e.target.checked)} /> punktiert <kbd className="hint">.</kbd>
+            <input type="checkbox" checked={shownDur.dotted} onChange={(e) => chooseDuration({ dotted: e.target.checked })} /> punktiert <kbd className="hint">.</kbd>
           </label>
           <label className="toggle">
-            <input type="checkbox" checked={triplet} onChange={(e) => setTriplet(e.target.checked)} /> Triole <kbd className="hint">t</kbd>
+            <input type="checkbox" checked={shownDur.triplet} onChange={(e) => chooseDuration({ triplet: e.target.checked })} /> Triole <kbd className="hint">t</kbd>
           </label>
         </div>
       )}
@@ -335,6 +412,7 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
           scale={window.innerWidth < 600 ? 1.1 : 1.35}
           pxPerQuarter={60}
           fill
+          fillRests
           selectedId={selectedId}
           activeStaff={activeStaff}
           cursor={cursor !== null ? { staff: activeStaff, tick: cursor } : null}
@@ -346,8 +424,8 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
               ? 'Ins System tippen: Ton hinzufügen oder entfernen. Oben drei Töne, unten der Bass.'
               : 'Zeile wählen und Tasten drücken: Ton hinzufügen oder entfernen.'
             : mode === 'notenblatt'
-              ? 'Notenwert wählen, dann ins System tippen. Eine Note antippen wählt sie aus, erneutes Tippen ändert die Tonhöhe.'
-              : 'Notenwert wählen, Position im System antippen (oder fortlaufend), dann Taste drücken.'}
+              ? 'Notenwert wählen, dann ins System tippen. Eine Note antippen wählt sie aus: erneutes Tippen ändert die Tonhöhe, Notenwert wählen ändert die Dauer.'
+              : 'Notenwert wählen, Position im System antippen (oder fortlaufend), dann Taste drücken. Eine angetippte Note erhält den gewählten Notenwert.'}
         </p>
       </div>
 
@@ -394,6 +472,9 @@ export default function DictationEditor({ d, input, setInput, mode, measure, set
         )}
         <button disabled={!selected || selected.given} onClick={deleteSelected}>
           Löschen <kbd className="hint">Entf</kbd>
+        </button>
+        <button disabled={!canUndo} onClick={undo} aria-label="Rückgängig">
+          ↶ Rückgängig <kbd className="hint">Strg+Z</kbd>
         </button>
       </div>
 

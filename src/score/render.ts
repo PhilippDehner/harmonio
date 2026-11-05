@@ -12,7 +12,7 @@ import {
   Tuplet,
 } from 'vexflow/bravura';
 import { Pitch, toMidi, vexKey, diatonicIndex, fromDiatonicIndex } from '../music/pitch';
-import { DNote, Duration, Measure, durationTicks } from '../dictation/model';
+import { DNote, Duration, Measure, durationTicks, restsInMeasure } from '../dictation/model';
 import { accidentalsInMeasure } from './accidentals';
 
 export type Clef = 'treble' | 'bass';
@@ -51,6 +51,8 @@ export interface RenderInput {
   fill?: boolean;
   /** Feste Breite pro Takt-Einheit (proportional zur Dauer) */
   pxPerQuarter?: number;
+  /** Lücken (auch leere Takte) mit Pausen füllen */
+  fillRests?: boolean;
 }
 
 export interface StaffLayout {
@@ -82,8 +84,14 @@ const STAFF_GAP = 95;
 const SYSTEM_GAP = 30;
 const TOP_PAD = 10;
 
-function vexDuration(d: Duration): string {
-  return d.base;
+function vexDuration(d: Duration, rest = false): string {
+  return d.base + (rest ? 'r' : '');
+}
+
+/** Lage der Pause im System (Ganze hängt an der 4. Linie). */
+function restKey(clef: Clef, d: Duration): string {
+  if (clef === 'treble') return d.base === 'w' ? 'd/5' : 'b/4';
+  return d.base === 'w' ? 'f/3' : 'd/3';
 }
 
 /** Diatonischer Index der obersten Linie */
@@ -239,14 +247,57 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
         const accMap = new Map<string, string | null>();
         seq.forEach((q, i) => accMap.set(q.note.id, accs[i]));
 
+        type Item = { start: number; dur: Duration; group?: DNote[]; wholeMeasure?: boolean };
+        const items: Item[] = starts.map((s) => ({ start: s, dur: groups.get(s)![0].dur, group: groups.get(s)! }));
+        if (input.fillRests) {
+          for (const r of restsInMeasure(notes, m)) items.push({ start: r.start, dur: r.dur, wholeMeasure: r.wholeMeasure });
+          items.sort((a, b) => a.start - b.start);
+        }
+
         const vfNotes: StaveNote[] = [];
         const tripletRuns: StaveNote[][] = [];
         let run: StaveNote[] = [];
         let runTicks = 0;
-        starts.forEach((s) => {
-          const g = groups.get(s)!;
-          const dur = g[0].dur;
+        const trackTriplet = (sn: StaveNote, dur: Duration) => {
+          if (dur.triplet) {
+            run.push(sn);
+            runTicks += durationTicks(dur);
+            if (runTicks % 24 === 0) {
+              tripletRuns.push(run);
+              run = [];
+              runTicks = 0;
+            }
+          } else if (run.length) {
+            tripletRuns.push(run);
+            run = [];
+            runTicks = 0;
+          }
+        };
+        items.forEach((item) => {
+          const s = item.start;
+          const dur = item.dur;
           try {
+            if (!item.group) {
+              const sn = new StaveNote({
+                keys: [restKey(staffDef.clef, dur)],
+                duration: vexDuration(dur, true),
+                clef: staffDef.clef,
+              });
+              sn.setStave(stave);
+              const mc = new ModifierContext();
+              sn.addToModifierContext(mc);
+              const tc = new TickContext();
+              tc.addTickable(sn);
+              tc.preFormat();
+              const pad = stave.getNoteStartX() + 12;
+              const rx = item.wholeMeasure ? (noteStart + noteEnd) / 2 - 6 : xForTick(s);
+              tc.setX(rx - pad);
+              sn.setContext(ctx);
+              vfNotes.push(sn);
+              trackTriplet(sn, dur);
+              return;
+            }
+            const g = item.group;
             const sn = new StaveNote({
               keys: g.map((n) => vexKey(n.pitch)),
               duration: vexDuration(dur),
@@ -275,19 +326,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
             tc.setX(xForTick(s) - pad);
             sn.setContext(ctx);
             vfNotes.push(sn);
-            if (dur.triplet) {
-              run.push(sn);
-              runTicks += durationTicks(dur);
-              if (runTicks % 24 === 0) {
-                tripletRuns.push(run);
-                run = [];
-                runTicks = 0;
-              }
-            } else if (run.length) {
-              tripletRuns.push(run);
-              run = [];
-              runTicks = 0;
-            }
+            trackTriplet(sn, dur);
             g.forEach((n) => {
               const idx = g.indexOf(n);
               const ys = sn.getYs();
