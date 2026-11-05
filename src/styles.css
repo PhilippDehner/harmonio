@@ -349,12 +349,16 @@ kbd.hint {
 }
 
 .tile-icon {
+  width: 100%;
+  max-width: 190px;
+  margin-bottom: 8px;
+  color: var(--fg);
+}
+
+.tile-icon svg {
   display: block;
   width: 100%;
-  max-width: 200px;
-  height: 80px;
-  margin-bottom: 10px;
-  color: var(--fg);
+  height: auto;
 }
 
 .tile:hover .tile-icon {

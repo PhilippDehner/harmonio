@@ -1,102 +1,95 @@
-/** Kleine Notensymbole für die Kacheln der Startseite (reines SVG, folgt der Textfarbe). */
+import { useEffect, useRef } from 'react';
+import { Formatter, Renderer, Stave, StaveConnector, StaveNote, Voice } from 'vexflow/bravura';
+
+/** Kleine Notenbeispiele für die Kacheln der Startseite (VexFlow, folgt der Textfarbe). */
 
 export type TileIconKind = 'interval' | 'chord' | 'mono' | 'two' | 'four';
 
-/** Notenkopf: x-Position, Stufe (0 = unterste Linie, 2 = zweite Linie …), gefüllt?, Hals. */
-type N = { x: number; s: number; filled?: boolean; stem?: 'up' | 'down' };
-type Staff = { top: number; notes: N[] };
+/** Ein Notenwert: Tonhöhen (VexFlow-Schreibweise) und Dauer. */
+type Ev = { keys: string[]; d: 'w' | 'q' };
+type Icon = { treble: Ev[]; bass?: Ev[] };
 
-const SP = 5; // Linienabstand
-const W = 120;
-const H = 60;
-const STEM = 3.5 * SP;
+const w = (...keys: string[]): Ev => ({ keys, d: 'w' });
+const q = (key: string): Ev => ({ keys: [key], d: 'q' });
 
-function yOf(top: number, s: number) {
-  return top + 4 * SP - (s * SP) / 2;
-}
-
-function StaffSvg({ top, notes }: Staff) {
-  const lines = [0, 1, 2, 3, 4].map((i) => top + i * SP);
-  return (
-    <g>
-      {lines.map((y) => (
-        <line key={y} x1={4} x2={W - 4} y1={y} y2={y} strokeWidth={0.8} opacity={0.55} />
-      ))}
-      <line x1={W - 4} x2={W - 4} y1={top} y2={top + 4 * SP} strokeWidth={0.8} opacity={0.55} />
-      {notes.map((n, i) => {
-        const y = yOf(top, n.s);
-        const ledgers: number[] = [];
-        for (let s = -2; s >= n.s; s -= 2) ledgers.push(s);
-        for (let s = 10; s <= n.s; s += 2) ledgers.push(s);
-        const rx = 3.3;
-        return (
-          <g key={i}>
-            {ledgers.map((s) => (
-              <line key={s} x1={n.x - 5.5} x2={n.x + 5.5} y1={yOf(top, s)} y2={yOf(top, s)} strokeWidth={0.8} />
-            ))}
-            <ellipse
-              cx={n.x}
-              cy={y}
-              rx={rx}
-              ry={2.4}
-              transform={`rotate(-20 ${n.x} ${y})`}
-              fill={n.filled ? 'currentColor' : 'none'}
-              strokeWidth={n.filled ? 0 : 1.3}
-            />
-            {n.stem === 'up' && <line x1={n.x + rx - 0.4} x2={n.x + rx - 0.4} y1={y - 0.5} y2={y - STEM} strokeWidth={1} />}
-            {n.stem === 'down' && <line x1={n.x - rx + 0.4} x2={n.x - rx + 0.4} y1={y + 0.5} y2={y + STEM} strokeWidth={1} />}
-          </g>
-        );
-      })}
-    </g>
-  );
-}
-
-const SINGLE_TOP = (H - 4 * SP) / 2;
-
-const ICONS: Record<TileIconKind, Staff[]> = {
+const ICONS: Record<TileIconKind, Icon> = {
   // Quinte, gleichzeitig
-  interval: [{ top: SINGLE_TOP, notes: [{ x: 60, s: 0 }, { x: 60, s: 4 }] }],
-  // Septakkord in Terzschichtung
-  chord: [{ top: SINGLE_TOP, notes: [2, 4, 6, 8].map((s) => ({ x: 60, s })) }],
+  interval: { treble: [w('g/4', 'd/5')] },
+  // C-Dur-Akkord, Basston im Bassschlüssel
+  chord: { treble: [w('e/4', 'g/4', 'c/5')], bass: [w('c/3')] },
   // kurze Melodie
-  mono: [
-    {
-      top: SINGLE_TOP,
-      notes: [
-        { x: 22, s: 2, filled: true, stem: 'up' },
-        { x: 44, s: 4, filled: true, stem: 'up' },
-        { x: 66, s: 3, filled: true, stem: 'up' },
-        { x: 88, s: 7, filled: true, stem: 'down' },
-        { x: 106, s: 6, filled: true, stem: 'down' },
-      ],
-    },
-  ],
-  // zwei Stimmen: oben Hals nach oben, unten Hals nach unten
-  two: [
-    {
-      top: SINGLE_TOP,
-      notes: [
-        ...[6, 7, 8, 7].map((s, i) => ({ x: 24 + i * 26, s, filled: true, stem: 'up' as const })),
-        ...[1, 2, 1, 0].map((s, i) => ({ x: 24 + i * 26, s, filled: true, stem: 'down' as const })),
-      ],
-    },
-  ],
-  // vierstimmiger Satz auf zwei Systemen (ganze Noten)
-  four: [
-    { top: 8, notes: [[8, 4], [7, 5], [8, 4]].flatMap(([a, b], i) => [{ x: 30 + i * 32, s: a }, { x: 30 + i * 32, s: b }]) },
-    { top: 36, notes: [[6, 2], [5, 0], [6, 2]].flatMap(([a, b], i) => [{ x: 30 + i * 32, s: a }, { x: 30 + i * 32, s: b }]) },
-  ],
+  mono: { treble: ['g/4', 'b/4', 'a/4', 'e/5', 'd/5'].map(q) },
+  // zwei Stimmen auf zwei Systemen
+  two: { treble: ['e/5', 'f/5', 'g/5', 'e/5'].map(q), bass: ['c/3', 'd/3', 'b/2', 'c/3'].map(q) },
+  // vierstimmiger Satz I–IV–I, nur der Bass im Bassschlüssel
+  four: {
+    treble: [w('g/4', 'c/5', 'e/5'), w('a/4', 'c/5', 'f/5'), w('g/4', 'c/5', 'e/5')],
+    bass: [w('c/3'), w('f/2'), w('c/3')],
+  },
 };
 
+const WIDTH = 220;
+const HEIGHT = 170;
+const SPACE = 10; // VexFlow-Linienabstand
+
+function voiceOf(evs: Ev[], clef: 'treble' | 'bass') {
+  const notes = evs.map((e) => new StaveNote({ keys: e.keys, duration: e.d, clef, auto_stem: true }));
+  return new Voice().setMode(Voice.Mode.SOFT).addTickables(notes);
+}
+
+function draw(el: HTMLDivElement, icon: Icon) {
+  el.innerHTML = '';
+  const renderer = new Renderer(el, Renderer.Backends.SVG);
+  renderer.resize(WIDTH, HEIGHT);
+  const ctx = renderer.getContext();
+  ctx.setFillStyle('currentColor');
+  ctx.setStrokeStyle('currentColor');
+
+  const x = icon.bass ? 14 : 4;
+  const sw = WIDTH - x - 4;
+  const opts = { space_above_staff_ln: 0 };
+  // Systeme vertikal so platzieren, dass alle Symbole denselben Maßstab haben
+  const trebleTop = icon.bass ? 30 : (HEIGHT - 4 * SPACE) / 2;
+  const treble = new Stave(x, trebleTop, sw, opts).addClef('treble').setContext(ctx);
+  const staves = [treble];
+  const voices = [voiceOf(icon.treble, 'treble')];
+  if (icon.bass) {
+    const bass = new Stave(x, 100, sw, opts).addClef('bass').setContext(ctx);
+    staves.push(bass);
+    voices.push(voiceOf(icon.bass, 'bass'));
+  }
+  staves.forEach((s) => s.draw());
+  if (staves.length === 2) {
+    new StaveConnector(staves[0], staves[1]).setType('brace').setContext(ctx).draw();
+    new StaveConnector(staves[0], staves[1]).setType('singleLeft').setContext(ctx).draw();
+    new StaveConnector(staves[0], staves[1]).setType('singleRight').setContext(ctx).draw();
+  }
+
+  const start = Math.max(...staves.map((s) => s.getNoteStartX()));
+  staves.forEach((s) => s.setNoteStartX(start));
+  const formatter = new Formatter();
+  voices.forEach((v) => formatter.joinVoices([v]));
+  formatter.format(voices, treble.getNoteEndX() - start - 10);
+  voices.forEach((v, i) => v.draw(ctx, staves[i]));
+
+  const svg = el.querySelector('svg');
+  if (svg) {
+    svg.setAttribute('viewBox', `0 0 ${WIDTH} ${HEIGHT}`);
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    svg.removeAttribute('style');
+  }
+}
+
 export default function TileIcon({ kind }: { kind: TileIconKind }) {
-  const staves = ICONS[kind];
-  return (
-    <svg className="tile-icon" viewBox={`0 0 ${W} ${H}`} aria-hidden="true" stroke="currentColor" fill="none">
-      {kind === 'four' && <line x1={4} x2={4} y1={8} y2={36 + 4 * SP} strokeWidth={0.8} opacity={0.55} />}
-      {staves.map((st, i) => (
-        <StaffSvg key={i} {...st} />
-      ))}
-    </svg>
-  );
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    try {
+      draw(ref.current, ICONS[kind]);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [kind]);
+  return <div ref={ref} className="tile-icon" aria-hidden="true" />;
 }
