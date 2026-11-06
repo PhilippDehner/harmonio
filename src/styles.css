@@ -907,3 +907,20 @@ button.primary kbd.hint {
   padding: 2px 8px;
   font-size: 0.85em;
 }
+
+/* Beta label for features still being tested */
+.beta-badge {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.3em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}

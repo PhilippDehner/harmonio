@@ -9,6 +9,7 @@ const AREAS: Tile[] = [
   },
   {
     to: '/pitch-giving',
+    beta: true,
     title: 'Tonangabe',
     text: 'Vierstimmigen Akkord lesen, vom Kammerton A aus die Töne finden und nachsingen – mit Mikrofon.',
     icon: 'pitch',
@@ -20,9 +21,9 @@ export default function Home() {
     <div className="stack">
       <h1>Willkommen bei Harmonio</h1>
       <p>
-        Harmonio hilft dir, dein musikalisches Gehör zu trainieren und Töne für den Chor anzugeben. Wähle einen Bereich –
-        der Ton wird mit dem ersten Klick freigeschaltet. Deine Einstellungen und Fortschritte werden nur in deinem
-        Browser gespeichert.
+        Harmonio hilft dir, dein musikalisches Gehör zu trainieren: Intervalle und Akkorde erkennen, Melodien oder
+        vierstimmige Sätze nach Gehör aufschreiben und Töne für den Chor angeben. Wähle einen Bereich. Deine
+        Einstellungen und Fortschritte werden nur in deinem Browser gespeichert.
       </p>
       <Tiles tiles={AREAS} />
     </div>
