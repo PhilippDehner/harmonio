@@ -998,3 +998,46 @@ button.primary kbd.hint {
   text-transform: uppercase;
   line-height: 1.5;
 }
+
+/* Theme switch in the header (light / system / dark) */
+.theme-switch {
+  margin-left: 4px;
+}
+
+.theme-switch button {
+  min-height: 32px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .site-header {
+    gap: 8px;
+  }
+  .site-header nav a {
+    padding: 6px 6px;
+  }
+  .theme-switch button {
+    padding: 4px 6px;
+  }
+}
+
+/* Narrow screens: a single button that cycles, keeps the header uncluttered */
+.theme-cycle {
+  display: none;
+}
+
+@media (max-width: 399px) {
+  .theme-switch {
+    display: none;
+  }
+  .theme-cycle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 4px 6px;
+  }
+}
