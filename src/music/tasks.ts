@@ -135,17 +135,21 @@ export function midiOf(p: Pitch): number {
  * Sound of a wrong chord answer for comparison: same root, chosen type and
  * chosen inversion, voicing as close as possible to the task.
  */
-export function answerChordMidi(task: ChordTask, type: ChordType, inversion: Inversion): number[] {
+export function answerChordVoicing(task: ChordTask, type: ChordType, inversion: Inversion): Pitch[] {
   const target = task.voicing.notes.map(toMidi);
-  let best: number[] | null = null;
+  let best: Pitch[] | null = null;
   let bestCost = Infinity;
   for (const v of allVoicings(task.root, type, inversion)) {
-    const m = v.notes.map(toMidi);
-    const cost = m.reduce((s, x, i) => s + Math.abs(x - target[i]), 0);
+    const cost = v.notes.reduce((s, p, i) => s + Math.abs(toMidi(p) - target[i]), 0);
     if (cost < bestCost) {
       bestCost = cost;
-      best = m;
+      best = v.notes;
     }
   }
-  return best ?? chordTones(task.root, type).map(toMidi);
+  return best ?? chordTones(task.root, type);
+}
+
+/** MIDI sound of a wrong chord answer; see answerChordVoicing. */
+export function answerChordMidi(task: ChordTask, type: ChordType, inversion: Inversion): number[] {
+  return answerChordVoicing(task, type, inversion).map(toMidi);
 }

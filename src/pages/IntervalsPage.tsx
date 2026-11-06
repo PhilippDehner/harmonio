@@ -14,6 +14,7 @@ import {
   intervalFromShortcut,
   isCorrectNaming,
   isShortcutPrefix,
+  transpose,
 } from '../music/intervals';
 import { germanName, germanNameWithOctave, toMidi } from '../music/pitch';
 import { IntervalPlayMode, IntervalTask, chooseAdaptive, makeIntervalTask } from '../music/tasks';
@@ -182,6 +183,13 @@ export default function IntervalsPage() {
 
   const directionWord = task.up ? 'aufwärts' : 'abwärts';
   const correctNames = correctSecondNotes(task.start, task.interval, task.up).map((p) => germanName(p));
+  // Second note of the incorrect answer from the same starting pitch.
+  const givenSecond = useMemo(() => {
+    if (!given || given === task.interval.id) return null;
+    const iv = intervalById(given);
+    const steps = iv.steps.includes(task.stepsUsed) ? task.stepsUsed : iv.steps[0];
+    return transpose(task.start, steps, iv.semitones, task.up);
+  }, [given, task]);
   const stats = aggregateStats(data.stats);
 
   return (
@@ -290,10 +298,21 @@ export default function IntervalsPage() {
       )}
 
       {phase === 'done' && (
-        <SolutionScore
-          sounds={mode === 'harmonic' ? [[task.start, task.second]] : [[task.start], [task.second]]}
-          ariaLabel={`Lösung: ${germanNameWithOctave(task.start)} und ${germanNameWithOctave(task.second)}`}
-        />
+        <div className="solution-scores">
+          <SolutionScore
+            title={givenSecond ? 'Lösung' : undefined}
+            sounds={mode === 'harmonic' ? [[task.start, task.second]] : [[task.start], [task.second]]}
+            ariaLabel={`Lösung: ${germanNameWithOctave(task.start)} und ${germanNameWithOctave(task.second)}`}
+          />
+          {givenSecond && (
+            <SolutionScore
+              title="Deine Antwort"
+              sounds={mode === 'harmonic' ? [[task.start, givenSecond]] : [[task.start], [givenSecond]]}
+              marked={mode === 'harmonic' ? [[false, true]] : [[false], [true]]}
+              ariaLabel={`Deine Antwort: ${germanNameWithOctave(task.start)} und ${germanNameWithOctave(givenSecond)}`}
+            />
+          )}
+        </div>
       )}
 
       {phase !== 'answer' && given === task.interval.id && settings.intervalNaming && (

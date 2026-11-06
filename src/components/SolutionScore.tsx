@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { DNote, Duration, Measure } from '../dictation/model';
 import { Pitch, toMidi } from '../music/pitch';
-import { StaffDef } from '../score/render';
+import { NoteStyle, StaffDef } from '../score/render';
+import { useSettings } from '../storage/store';
 import ScoreView from './ScoreView';
 
 const WHOLE: Duration = { base: 'w', dotted: false, triplet: false };
@@ -13,10 +14,15 @@ type Props = {
   /** Fixed assignment: voices 0–1 in treble, 2–3 in bass clef (four-part chorale). */
   satb?: boolean;
   ariaLabel: string;
+  /** Notes to highlight in red, with the same shape as `sounds`. */
+  marked?: boolean[][];
+  /** Heading displayed above the score. */
+  title?: string;
 };
 
 /** Score of the solution (whole notes, without time and key signature). */
-export default function SolutionScore({ sounds, satb, ariaLabel }: Props) {
+export default function SolutionScore({ sounds, satb, ariaLabel, marked, title }: Props) {
+  const { theme } = useSettings();
   const input = useMemo(() => {
     const measures: Measure[] = [{ start: 0, ticks: TICKS * Math.max(1, sounds.length) }];
     const all = sounds.flat().map(toMidi);
@@ -54,8 +60,23 @@ export default function SolutionScore({ sounds, satb, ariaLabel }: Props) {
     return { measures, staves, voices };
   }, [sounds, satb]);
 
+  const noteStyles = useMemo(() => {
+    if (!marked) return undefined;
+    const err = getComputedStyle(document.documentElement).getPropertyValue('--err').trim();
+    const styles: Record<string, NoteStyle> = {};
+    for (const v of input.voices)
+      for (const n of v) {
+        const [i, j] = n.id.split('-').map(Number);
+        if (marked[i]?.[j]) styles[n.id] = { head: err, stem: err };
+      }
+    return styles;
+    // `theme`: Farbe nach Umschalten des Farbschemas neu bestimmen
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, marked, theme]);
+
   return (
     <div className="solution-score">
+      {title && <div className="solution-score-title muted small">{title}</div>}
       <ScoreView
         ariaLabel={ariaLabel}
         keyFifths={0}
@@ -69,6 +90,7 @@ export default function SolutionScore({ sounds, satb, ariaLabel }: Props) {
         fromMeasure={0}
         toMeasure={1}
         scale={1}
+        noteStyles={noteStyles}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isAudioRunning, play, stopAll } from '../audio/engine';
 import { useAutoNext } from '../components/autoNext';
 import { useHotkeys } from '../components/hotkeys';
@@ -16,8 +16,8 @@ import {
   chordNamingSolution,
   isCorrectChordNaming,
 } from '../music/chords';
-import { germanName, germanNameWithOctave, toMidi } from '../music/pitch';
-import { ChordTask, answerChordMidi, chooseAdaptive, makeChordTask } from '../music/tasks';
+import { germanName, germanNameWithOctave, samePitch, toMidi } from '../music/pitch';
+import { ChordTask, answerChordMidi, answerChordVoicing, chooseAdaptive, makeChordTask } from '../music/tasks';
 import { aggregateStats, getState, recordChord, recordNaming, updateSettings, useAppData } from '../storage/store';
 
 type Phase = 'answer' | 'naming' | 'done';
@@ -168,13 +168,17 @@ export default function ChordsPage() {
     (!checkInv || invAnswer === task.inversion);
   const autoNextIn = useAutoNext(phase === 'done', isCorrect && (!namingResult || namingResult.correct), next);
   const solutionLabel = chordAnswerLabel(task.type, checkInv ? task.inversion : null);
+  const givenInv = level === 2 && typeAnswer !== 'augmented' && invAnswer ? invAnswer : task.inversion;
   const givenLabel = typeAnswer ? chordAnswerLabel(typeAnswer, level === 2 && typeAnswer !== 'augmented' ? invAnswer : null) : '';
   const playGiven = () => {
     if (!typeAnswer) return;
-    const inv = level === 2 && typeAnswer !== 'augmented' && invAnswer ? invAnswer : task.inversion;
     stopAll();
-    void play({ sounds: [{ time: 0, midi: answerChordMidi(task, typeAnswer, inv) }] });
+    void play({ sounds: [{ time: 0, midi: answerChordMidi(task, typeAnswer, givenInv) }] });
   };
+  const givenVoicing = useMemo(
+    () => (phase !== 'answer' && !isCorrect && typeAnswer ? answerChordVoicing(task, typeAnswer, givenInv) : null),
+    [phase, isCorrect, typeAnswer, givenInv, task],
+  );
   const stats = aggregateStats(data.stats);
   const naming = chordNamingSolution(task.root, task.type);
 
@@ -281,11 +285,23 @@ export default function ChordsPage() {
       )}
 
       {phase === 'done' && (
-        <SolutionScore
-          sounds={[task.voicing.notes]}
-          satb
-          ariaLabel={`Lösung: ${task.voicing.notes.map(germanNameWithOctave).join(', ')}`}
-        />
+        <div className="solution-scores">
+          <SolutionScore
+            title={givenVoicing ? 'Lösung' : undefined}
+            sounds={[task.voicing.notes]}
+            satb
+            ariaLabel={`Lösung: ${task.voicing.notes.map(germanNameWithOctave).join(', ')}`}
+          />
+          {givenVoicing && (
+            <SolutionScore
+              title="Deine Antwort"
+              sounds={[givenVoicing]}
+              satb
+              marked={[givenVoicing.map((p, i) => !task.voicing.notes[i] || !samePitch(p, task.voicing.notes[i]))]}
+              ariaLabel={`Deine Antwort: ${givenVoicing.map(germanNameWithOctave).join(', ')}`}
+            />
+          )}
+        </div>
       )}
 
       {phase !== 'answer' && isCorrect && settings.chordNaming && (
