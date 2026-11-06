@@ -795,3 +795,17 @@ button.primary kbd.hint {
 .solution-score {
   max-width: 280px;
 }
+
+.solution-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.solution-scores > .solution-score {
+  flex: 1 1 200px;
+}
+
+.solution-score-title {
+  margin-bottom: 2px;
+}

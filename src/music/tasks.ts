@@ -132,20 +132,24 @@ export function midiOf(p: Pitch): number {
 }
 
 /**
- * Klang einer falschen Akkordantwort zum Vergleich: gleicher Grundton,
+ * Lage einer falschen Akkordantwort zum Vergleich: gleicher Grundton,
  * gewählter Typ und gewählte Umkehrung, Lage möglichst nah an der Aufgabe.
  */
-export function answerChordMidi(task: ChordTask, type: ChordType, inversion: Inversion): number[] {
+export function answerChordVoicing(task: ChordTask, type: ChordType, inversion: Inversion): Pitch[] {
   const target = task.voicing.notes.map(toMidi);
-  let best: number[] | null = null;
+  let best: Pitch[] | null = null;
   let bestCost = Infinity;
   for (const v of allVoicings(task.root, type, inversion)) {
-    const m = v.notes.map(toMidi);
-    const cost = m.reduce((s, x, i) => s + Math.abs(x - target[i]), 0);
+    const cost = v.notes.reduce((s, p, i) => s + Math.abs(toMidi(p) - target[i]), 0);
     if (cost < bestCost) {
       bestCost = cost;
-      best = m;
+      best = v.notes;
     }
   }
-  return best ?? chordTones(task.root, type).map(toMidi);
+  return best ?? chordTones(task.root, type);
+}
+
+/** Klang einer falschen Akkordantwort (MIDI), siehe answerChordVoicing. */
+export function answerChordMidi(task: ChordTask, type: ChordType, inversion: Inversion): number[] {
+  return answerChordVoicing(task, type, inversion).map(toMidi);
 }
