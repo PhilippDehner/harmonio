@@ -18,7 +18,7 @@ const TILES: Tile[] = [
   { to: '/chords', tag: 'Stufe 1', title: 'Akkorde', text: 'Dur, Moll, vermindert und übermäßig – auf Wunsch mit Umkehrung.', icon: 'chord' },
   { to: '/dictation/monophonic', tag: 'Stufe 2', title: 'Einstimmiges Diktat', text: 'Eine Melodie hören und notieren.', icon: 'mono' },
   { to: '/dictation/two-part', tag: 'Stufe 2', title: 'Zweistimmiges Diktat', text: 'Zwei Stimmen gleichzeitig hören und notieren.', icon: 'two' },
-  { to: '/dictation/four-part', tag: 'Stufe 2', title: 'Vierstimmiger Satz', text: 'Akkordfolgen im vierstimmigen Satz notieren.', icon: 'four' },
+  { to: '/dictation/four-part', tag: 'Stufe 2', beta: true, title: 'Vierstimmiger Satz', text: 'Akkordfolgen im vierstimmigen Satz notieren.', icon: 'four' },
 ];
 
 export function Tiles({ tiles }: { tiles: Tile[] }) {
