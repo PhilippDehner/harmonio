@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.5.0',
+    date: '2026-11-06',
+    changes: [
+      'Tonangabe: Neue Einstellung „Bass“ – ohne Haken singt der Bass immer den Grundton (Standard), mit „auch Umkehrungen“ auch Terz oder Quinte.',
+    ],
+  },
+  {
     version: '1.4.1',
     date: '2026-11-06',
     changes: [

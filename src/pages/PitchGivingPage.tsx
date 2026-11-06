@@ -218,6 +218,17 @@ function PitchGivingOptionsBar() {
           auch weite Lagen
         </label>
       </div>
+      <div className="option-group" role="group" aria-label="Bass">
+        <span className="option-group-label muted small">Bass</span>
+        <label className="toggle" title="Ohne Haken: Der Bass singt immer den Grundton. Mit Haken: auch Terz oder Quinte im Bass (Umkehrungen)">
+          <input
+            type="checkbox"
+            checked={settings.pgInversions}
+            onChange={(e) => updateSettings({ pgInversions: e.target.checked })}
+          />
+          auch Umkehrungen
+        </label>
+      </div>
     </div>
   );
 }
@@ -245,7 +256,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const tour = useTour('pitch-giving', [
     { title: 'Tonangabe', text: `Du siehst einen vierstimmigen Akkord und hörst nur das A (${settings.tuningA4} Hz). Finde davon ausgehend die Töne des Akkords.` },
     { selector: '#tg-a', title: 'A abspielen', text: 'Spiele das A beliebig oft ab (Leertaste).' },
-    { selector: '#tg-options', title: 'Schwierigkeit', text: 'Wähle Tonarten mit wenigen oder vielen Vorzeichen, Dur und/oder Moll und ob auch weite Lagen mit Tönen weit weg vom A vorkommen.' },
+    { selector: '#tg-options', title: 'Schwierigkeit', text: 'Wähle Tonarten mit wenigen oder vielen Vorzeichen, Dur und/oder Moll, ob auch weite Lagen mit Tönen weit weg vom A vorkommen und ob der Bass auch Terz oder Quinte singen darf (Umkehrungen) statt immer den Grundton.' },
     { selector: '#tg-new', title: 'Neue Übung', text: 'Mit „Neue Übung“ (N) bekommst du jederzeit einen anderen Akkord. Übersprungene Akkorde zählen nicht in der Statistik.' },
     { selector: '#tg-voices', title: 'Singen', text: `Singe die vier Töne nacheinander ${SING_ORDERS.find((o) => o.id === settings.singOrder)!.text} und halte jeden kurz, bis er erkannt ist. Du musst nichts anklicken: Nach jedem erkannten Ton geht es automatisch mit der nächsten Stimme weiter. Setze zwischen den Tönen nur kurz ab. Die Reihenfolge wählst du oben unter „Reihenfolge“.` },
   ]);
