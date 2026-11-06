@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.6.0',
+    date: '2026-11-06',
+    changes: [
+      'Tonangabe: Ein falsch gesungener Ton lässt sich sofort mit „↶ nochmal“ (Taste Z) zurücknehmen und neu singen. In der Statistik zählt nur der erste Versuch.',
+    ],
+  },
+  {
     version: '1.5.1',
     date: '2026-11-06',
     changes: [
