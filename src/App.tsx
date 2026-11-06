@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy } from 'react';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -9,19 +9,11 @@ import PitchGivingPage from './pages/PitchGivingPage';
 import DictationListPage from './pages/DictationListPage';
 import StatsPage from './pages/StatsPage';
 import SettingsPage from './pages/SettingsPage';
-import { useSettings } from './storage/store';
 
 // Load music notation (VexFlow) only when a dictation is opened
 const DictationPage = lazy(() => import('./pages/DictationPage'));
 
 export default function App() {
-  const { theme } = useSettings();
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === 'system') delete root.dataset.theme;
-    else root.dataset.theme = theme;
-  }, [theme]);
-
   return (
     <HashRouter>
       <Routes>
