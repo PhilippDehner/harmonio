@@ -29,7 +29,7 @@ export default function SettingsPage() {
   const settings = useSettings();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  // Entwurf des Eingabefelds, damit es beim Tippen auch leer sein darf
+  // Draft value of the input field, so it may be empty while typing
   const [secondsDraft, setSecondsDraft] = useState<string | null>(null);
 
   return (
@@ -122,7 +122,7 @@ export default function SettingsPage() {
         </p>
         <div className="row">
           <div className="segmented" role="group" aria-label="Stimmlage">
-            {(['mann', 'frau'] as const).map((v) => (
+            {(['male', 'female'] as const).map((v) => (
               <button key={v} aria-pressed={settings.voiceType === v} onClick={() => updateSettings({ voiceType: v })}>
                 {VOICE_LABEL[v]}
               </button>

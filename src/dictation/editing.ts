@@ -4,8 +4,8 @@ import { DNote, Dictation, Duration, Measure, durationTicks, measureIndexAt, new
 export type EditResult = { ok: true; notes: DNote[]; id: string } | { ok: false; message: string };
 
 /**
- * Setzt eine Note an Position `start` ein. Überlappende eigene Noten werden
- * entfernt; Noten dürfen nicht über den Taktstrich reichen (keine Haltebögen).
+ * Inserts a note at position `start`. Overlapping user notes are removed;
+ * notes must not cross the bar line (no ties).
  */
 export function insertNote(
   notes: DNote[],
@@ -38,7 +38,7 @@ export function updatePitch(notes: DNote[], id: string, pitch: Pitch): DNote[] {
   return notes.map((n) => (n.id === id && !n.given ? { ...n, pitch } : n));
 }
 
-/** Verschiebt eine Note zeitlich (innerhalb ihres Taktes). */
+/** Moves a note in time (within its measure). */
 export function moveNoteInTime(notes: DNote[], measures: Measure[], id: string, delta: number): EditResult {
   const note = notes.find((n) => n.id === id);
   if (!note || note.given) return { ok: false, message: 'Diese Note kann nicht verschoben werden.' };
@@ -48,13 +48,13 @@ export function moveNoteInTime(notes: DNote[], measures: Measure[], id: string, 
   const rest = notes.filter((n) => n.id !== id);
   const r = insertNote(rest, measures, target, note.dur, note.pitch);
   if (!r.ok) return r;
-  // ID beibehalten
+  // keep the ID
   return { ok: true, id, notes: r.notes.map((n) => (n.id === r.id ? { ...n, id } : n)) };
 }
 
 /**
- * Ändert die Dauer einer Note (Beginn bleibt). Wird sie länger, werden
- * überlappende eigene Noten wie beim Einfügen ersetzt.
+ * Changes the duration of a note (start stays). If it gets longer,
+ * overlapping user notes are replaced as when inserting.
  */
 export function changeDuration(notes: DNote[], measures: Measure[], id: string, dur: Duration): EditResult {
   const note = notes.find((n) => n.id === id);
@@ -65,7 +65,7 @@ export function changeDuration(notes: DNote[], measures: Measure[], id: string, 
   return { ok: true, id, notes: r.notes.map((n) => (n.id === r.id ? { ...n, id } : n)) };
 }
 
-/** Nächste freie Einfügeposition nach einer Note bzw. am Taktanfang. */
+/** Next free insert position after a note or at the start of the measure. */
 export function nextPosition(notes: DNote[], measures: Measure[], measureIndex: number): number {
   const m = measures[measureIndex];
   const inMeasure = notes.filter((n) => n.start >= m.start && n.start < m.start + m.ticks);
@@ -75,8 +75,8 @@ export function nextPosition(notes: DNote[], measures: Measure[], measureIndex: 
 }
 
 /**
- * Vorgabe für die Eingabe: die Anfangstöne aller Stimmen
- * (vierstimmig: der ganze erste Akkord).
+ * Given notes for the input: the first notes of all voices
+ * (four-part: the whole first chord).
  */
 export function initialInput(d: Dictation): DNote[][] {
   return d.voices.map((v) => {
@@ -86,8 +86,8 @@ export function initialInput(d: Dictation): DNote[][] {
 }
 
 /**
- * Vierstimmiger Satz: Oberstimmen eines Akkords (ungeordnet) und Bass werden
- * nach Tonhöhe auf Sopran, Alt, Tenor verteilt.
+ * Four-part chorale: the upper notes of a chord (unordered) are assigned
+ * to soprano, alto and tenor by pitch; the bass stays separate.
  */
 export function distributeChorale(
   upperPerChord: Pitch[][],

@@ -16,6 +16,7 @@ import {
   VOICE_NAMES,
   evaluateSung,
   expectedMidi,
+  describeIntonation,
   formatCents,
   makePitchGivingTask,
   nearestNoteName,
@@ -24,7 +25,7 @@ import { ChordTask } from '../music/tasks';
 import { updateSettings, useSettings } from '../storage/store';
 
 const A4 = 69;
-/** Nach dem Abspielen so lange nicht zuhören, damit das Klavier nicht als Gesang zählt (ms). */
+/** Ignore the microphone this long after playback so the piano does not count as singing (ms). */
 const MUTE_A = 2400;
 const MUTE_CHORD = 2400;
 
@@ -35,12 +36,6 @@ interface Shared {
   handler: React.RefObject<MicFrame>;
   playA: () => void;
   playChord: (midi: number[]) => void;
-}
-
-/** Abweichung eines falschen Tons in Halbtönen, z. B. „2 Halbtöne zu tief“. */
-function describeMiss(cents: number): string {
-  const semis = Math.max(1, Math.round(Math.abs(cents) / 100));
-  return `${semis === 1 ? 'ein Halbton' : `${semis} Halbtöne`} zu ${cents > 0 ? 'hoch' : 'tief'}`;
 }
 
 function LivePitch({ midi }: { midi: number | null }) {
@@ -56,17 +51,17 @@ function LivePitch({ midi }: { midi: number | null }) {
 function MicControls({ mic }: { mic: Mic }) {
   return (
     <>
-      {mic.state !== 'an' && (
-        <button onClick={() => void mic.start()} disabled={mic.state === 'startet'}>
+      {mic.state !== 'on' && (
+        <button onClick={() => void mic.start()} disabled={mic.state === 'starting'}>
           🎤 Mikrofon einschalten
         </button>
       )}
-      {mic.state === 'an' && <span className="muted small">🎤 Mikrofon an</span>}
+      {mic.state === 'on' && <span className="muted small">🎤 Mikrofon an</span>}
     </>
   );
 }
 
-/* ---------- Erkennung der Stimmlage ---------- */
+/* ---------- Voice type detection ---------- */
 
 function VoiceSetup({ mic, handler, playA }: Shared) {
   const [step, setStep] = useState<'intro' | 'listen' | 'confirm'>('intro');
@@ -106,7 +101,7 @@ function VoiceSetup({ mic, handler, playA }: Shared) {
           bequemen Vokal nach, bis es erkannt ist.
         </p>
         <div className="play-area">
-          <button className="primary" onClick={() => void startListening()} disabled={mic.state === 'startet'}>
+          <button className="primary" onClick={() => void startListening()} disabled={mic.state === 'starting'}>
             ▶ A spielen und nachsingen
           </button>
           {step === 'listen' && (
@@ -133,8 +128,8 @@ function VoiceSetup({ mic, handler, playA }: Shared) {
               <button className="primary" onClick={() => updateSettings({ voiceType: guess })} autoFocus>
                 Ja
               </button>
-              <button onClick={() => updateSettings({ voiceType: guess === 'mann' ? 'frau' : 'mann' })}>
-                Nein, {VOICE_LABEL[guess === 'mann' ? 'frau' : 'mann']}
+              <button onClick={() => updateSettings({ voiceType: guess === 'male' ? 'female' : 'male' })}>
+                Nein, {VOICE_LABEL[guess === 'male' ? 'female' : 'male']}
               </button>
               <button onClick={() => void startListening()}>Nochmal singen</button>
             </div>
@@ -146,15 +141,15 @@ function VoiceSetup({ mic, handler, playA }: Shared) {
           Ohne Mikrofon festlegen (später in den Einstellungen änderbar):
         </p>
         <div className="row">
-          <button onClick={() => updateSettings({ voiceType: 'mann' })}>Männerstimme</button>
-          <button onClick={() => updateSettings({ voiceType: 'frau' })}>Frauenstimme</button>
+          <button onClick={() => updateSettings({ voiceType: 'male' })}>Männerstimme</button>
+          <button onClick={() => updateSettings({ voiceType: 'female' })}>Frauenstimme</button>
         </div>
       </div>
     </div>
   );
 }
 
-/* ---------- Übung ---------- */
+/* ---------- Exercise ---------- */
 
 type Results = (SungResult | null)[];
 
@@ -171,7 +166,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const timer = useRef<number | null>(null);
   const done = pos >= SING_ORDER.length;
 
-  const tour = useTour('tonangabe', [
+  const tour = useTour('pitch-giving', [
     { title: 'Tonangabe', text: 'Du siehst einen vierstimmigen Akkord und hörst nur das A (440 Hz). Finde davon ausgehend die Töne des Akkords.' },
     { selector: '#tg-a', title: 'A abspielen', text: 'Spiele das A beliebig oft ab (Leertaste).' },
     { selector: '#tg-voices', title: 'Singen', text: 'Singe die vier Töne nacheinander von unten nach oben (Bass, Tenor, Alt, Sopran) und halte jeden kurz, bis er erkannt ist. Setze zwischen den Tönen kurz ab.' },
@@ -245,6 +240,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
 
   const allCorrect = done && results.every((r) => r?.correct);
   const correctCount = results.filter((r) => r?.correct).length;
+  const meanCents = Math.round(results.reduce((sum, r) => sum + Math.abs(r?.cents ?? 0), 0) / 4);
   const autoNextIn = useAutoNext(done, allCorrect, next);
 
   return (
@@ -317,18 +313,24 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
                   <th scope="row">{VOICE_NAMES[vi]}</th>
                   <td>
                     {r ? (
-                      <>
-                        {r.correct ? '✓' : '✗'} {target}
-                        <span className="muted small">
-                          {' '}
-                          – gesungen: {nearestNoteName(freqToMidi(r.freq))},{' '}
-                          {r.correct ? formatCents(r.cents) : describeMiss(r.cents)}
-                          {r.correct && r.octaveShift !== 0 &&
-                            ` · ${Math.abs(r.octaveShift) === 1 ? 'eine' : Math.abs(r.octaveShift)} Oktave ${r.octaveShift > 0 ? 'höher' : 'tiefer'} als erwartet`}
-                        </span>
-                      </>
+                      r.correct ? (
+                        <>
+                          ✓ richtig: {target}
+                          <span className="small">
+                            {' '}
+                            – {describeIntonation(r.cents)}
+                            {r.octaveShift !== 0 &&
+                              ` · ${Math.abs(r.octaveShift) === 1 ? 'eine' : Math.abs(r.octaveShift)} Oktave ${r.octaveShift > 0 ? 'höher' : 'tiefer'} als erwartet`}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          ✗ falsch: {target}
+                          <span className="small"> – gesungen: {nearestNoteName(freqToMidi(r.freq))}</span>
+                        </>
+                      )
                     ) : current ? (
-                      mic.state === 'an' ? (
+                      mic.state === 'on' ? (
                         <>
                           jetzt singen – gehört: <LivePitch midi={live} />
                         </>
@@ -344,11 +346,19 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
             })}
           </tbody>
         </table>
+        <p className="muted small" style={{ marginBottom: 0 }}>
+          <b>Cent</b> ist ein Maß für feine Tonhöhenunterschiede: Ein Halbton hat 100 Cent. Ein Ton gilt als richtig,
+          wenn er höchstens 50 Cent neben dem Zielton liegt, also näher an ihm als am Nachbarton. Bei richtigen Tönen
+          zeigt die Cent-Zahl, wie sauber du intoniert hast: Bis etwa 10 Cent ist die Abweichung kaum hörbar, ab etwa
+          20 Cent klingt der Akkord merklich unsauber.
+        </p>
       </div>
 
       {done && (
         <div className={`feedback ${allCorrect ? 'ok' : 'err'}`} role="status">
-          {allCorrect ? 'Alle vier Töne richtig.' : `${correctCount} von 4 Tönen richtig.`}
+          {allCorrect
+            ? `Alle vier Töne richtig – im Schnitt ${meanCents} Cent daneben.`
+            : `${correctCount} von 4 Tönen richtig.`}
         </div>
       )}
       {tour.element}
@@ -356,7 +366,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   );
 }
 
-/* ---------- Seite ---------- */
+/* ---------- Page ---------- */
 
 export default function PitchGivingPage() {
   const { voiceType } = useSettings();

@@ -4,8 +4,8 @@ import { detectPitch } from './pitchDetect';
 export type MicFrame = (freq: number | null, time: number) => void;
 
 /**
- * Startet das Mikrofon und meldet etwa alle 40 ms die erkannte Frequenz.
- * Liefert eine Funktion zum Beenden.
+ * Starts the microphone and reports the detected frequency about every 40 ms.
+ * Returns a function that stops it.
  */
 export async function startMic(onFrame: MicFrame): Promise<() => void> {
   if (!navigator.mediaDevices?.getUserMedia) throw new Error('Dieser Browser unterstützt keinen Mikrofonzugriff.');
@@ -31,14 +31,14 @@ export async function startMic(onFrame: MicFrame): Promise<() => void> {
   };
 }
 
-export type MicState = 'aus' | 'startet' | 'an' | 'fehler';
+export type MicState = 'off' | 'starting' | 'on' | 'error';
 
-/** Mikrofon für eine Seite; wird beim Verlassen der Seite beendet. */
+/** Microphone for a page; stopped when the page is left. */
 export function useMic(onFrame: MicFrame) {
   const frameRef = useRef(onFrame);
   frameRef.current = onFrame;
   const stopRef = useRef<(() => void) | null>(null);
-  const [state, setState] = useState<MicState>('aus');
+  const [state, setState] = useState<MicState>('off');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(
@@ -51,11 +51,11 @@ export function useMic(onFrame: MicFrame) {
 
   async function start() {
     if (stopRef.current) return;
-    setState('startet');
+    setState('starting');
     setError(null);
     try {
       stopRef.current = await startMic((f, t) => frameRef.current(f, t));
-      setState('an');
+      setState('on');
     } catch (e) {
       const err = e as Error;
       setError(
@@ -65,14 +65,14 @@ export function useMic(onFrame: MicFrame) {
             ? 'Es wurde kein Mikrofon gefunden.'
             : err.message,
       );
-      setState('fehler');
+      setState('error');
     }
   }
 
   function stop() {
     stopRef.current?.();
     stopRef.current = null;
-    setState('aus');
+    setState('off');
   }
 
   return { state, error, start, stop };

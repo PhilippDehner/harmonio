@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { Formatter, Renderer, Stave, StaveConnector, StaveNote, Voice } from 'vexflow/bravura';
 
-/** Kleine Notenbeispiele für die Kacheln der Startseite (VexFlow, folgt der Textfarbe). */
+/** Small music examples for the home page tiles (VexFlow, follows the text color). */
 
-export type TileIconKind = 'interval' | 'chord' | 'pitch' | 'mono' | 'two' | 'four';
+export type TileIconKind = 'interval' | 'chord' | 'pitch' | 'ear' | 'mono' | 'two' | 'four';
 
-/** Ein Notenwert: Tonhöhen (VexFlow-Schreibweise) und Dauer. */
+/** One note value: pitches (VexFlow notation) and duration. */
 type Ev = { keys: string[]; d: 'w' | 'q' };
 type Icon = { treble: Ev[]; bass?: Ev[] };
 
@@ -13,17 +13,19 @@ const w = (...keys: string[]): Ev => ({ keys, d: 'w' });
 const q = (key: string): Ev => ({ keys: [key], d: 'q' });
 
 const ICONS: Record<TileIconKind, Icon> = {
-  // Quinte, gleichzeitig
+  // Fifth, harmonic
   interval: { treble: [w('g/4', 'd/5')] },
-  // C-Dur-Akkord, Basston im Bassschlüssel
+  // C major chord, bass note in bass clef
   chord: { treble: [w('e/4', 'g/4', 'c/5')], bass: [w('c/3')] },
-  // Stimmton a', danach ein vierstimmiger Akkord
-  pitch: { treble: [w('a/4'), w('c/5', 'e/5')], bass: [w('a/3'), w('a/2', 'e/3')] },
-  // kurze Melodie
+  // reference pitch a', then a four-part chord
+  pitch: { treble: [w('a/4'), w('c/4', 'e/4', 'a/4', 'c/5')] },
+  // interval and chord (ear training overview)
+  ear: { treble: [w('g/4', 'd/5'), w('e/4', 'g/4', 'c/5')] },
+  // short melody
   mono: { treble: ['g/4', 'b/4', 'a/4', 'e/5', 'd/5'].map(q) },
-  // zwei Stimmen auf zwei Systemen
+  // two voices on two staves
   two: { treble: ['e/4', 'f/4', 'g/4', 'e/4'].map(q), bass: ['c/3', 'd/3', 'b/2', 'c/3'].map(q) },
-  // vierstimmiger Satz I–IV–I, nur der Bass im Bassschlüssel
+  // four-part chorale I–IV–I, only the bass in bass clef
   four: {
     treble: [w('g/4', 'c/5', 'e/5'), w('a/4', 'c/5', 'f/5'), w('g/4', 'c/5', 'e/5')],
     bass: [w('c/3'), w('f/2'), w('c/3')],
@@ -32,7 +34,7 @@ const ICONS: Record<TileIconKind, Icon> = {
 
 const WIDTH = 220;
 const HEIGHT = 170;
-const SPACE = 10; // VexFlow-Linienabstand
+const SPACE = 10; // VexFlow staff line spacing
 
 function voiceOf(evs: Ev[], clef: 'treble' | 'bass') {
   const notes = evs.map((e) => new StaveNote({ keys: e.keys, duration: e.d, clef, auto_stem: true }));
@@ -50,7 +52,7 @@ function draw(el: HTMLDivElement, icon: Icon) {
   const x = icon.bass ? 14 : 4;
   const sw = WIDTH - x - 4;
   const opts = { space_above_staff_ln: 0 };
-  // Systeme vertikal so platzieren, dass alle Symbole denselben Maßstab haben
+  // Place staves vertically so that all symbols share the same scale
   const trebleTop = icon.bass ? 30 : (HEIGHT - 4 * SPACE) / 2;
   const treble = new Stave(x, trebleTop, sw, opts).addClef('treble').setContext(ctx);
   const staves = [treble];

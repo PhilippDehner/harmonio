@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PitchHold, classifyVoice, detectPitch, freqToMidi, midiToFreq } from '../audio/pitchDetect';
-import { evaluateSung, expectedMidi, makePitchGivingTask, nearestNoteName } from '../music/pitchGiving';
+import { describeIntonation, evaluateSung, expectedMidi, makePitchGivingTask, nearestNoteName } from '../music/pitchGiving';
 import { toMidi } from '../music/pitch';
 
 const SR = 48000;
@@ -12,25 +12,25 @@ function tone(freq: number, n = 2048, harmonics = [1, 0.5, 0.3]): Float32Array {
   return buf;
 }
 
-describe('Tonhöhenerkennung', () => {
-  it('erkennt Grundfrequenzen von Männer- und Frauenstimmen', () => {
+describe('Pitch detection', () => {
+  it('detects fundamentals of male and female voices', () => {
     for (const f of [82.4, 110, 196, 220, 261.6, 440, 698.5, 880]) {
       const r = detectPitch(tone(f), SR);
       expect(r).not.toBeNull();
       expect(Math.abs(1200 * Math.log2(r!.freq / f))).toBeLessThan(10);
     }
   });
-  it('Stille ergibt keine Tonhöhe', () => {
+  it('returns null for silence', () => {
     expect(detectPitch(new Float32Array(2048), SR)).toBeNull();
   });
-  it('Umrechnung Frequenz/MIDI', () => {
+  it('converts frequency and MIDI', () => {
     expect(freqToMidi(440)).toBeCloseTo(69);
     expect(midiToFreq(57)).toBeCloseTo(220);
   });
 });
 
-describe('Gehaltener Ton', () => {
-  it('meldet einen Ton erst nach der Haltedauer und nur einmal', () => {
+describe('Held note', () => {
+  it('reports a note only after the hold time and only once', () => {
     const h = new PitchHold(600, 40);
     let found: number | null = null;
     for (let t = 0; t <= 1500; t += 40) {
@@ -44,7 +44,7 @@ describe('Gehaltener Ton', () => {
     expect(found).not.toBeNull();
     expect(Math.abs(1200 * Math.log2(found! / 220))).toBeLessThan(10);
   });
-  it('gleicher Ton nach Pause wird erneut gemeldet', () => {
+  it('reports the same note again after a pause', () => {
     const h = new PitchHold(300, 40);
     let count = 0;
     let t = 0;
@@ -53,30 +53,30 @@ describe('Gehaltener Ton', () => {
     }
     expect(count).toBe(2);
   });
-  it('wechselnde Tonhöhe wird nicht gemeldet', () => {
+  it('does not report a changing pitch', () => {
     const h = new PitchHold(300, 40);
     for (let t = 0, i = 0; t < 2000; t += 40, i++) expect(h.push(t, i % 2 ? 220 : 247)).toBeNull();
   });
 });
 
-describe('Tonangabe', () => {
-  it('Stimmlage aus nachgesungenem A', () => {
-    expect(classifyVoice(440)).toBe('frau');
-    expect(classifyVoice(430)).toBe('frau');
-    expect(classifyVoice(220)).toBe('mann');
-    expect(classifyVoice(110)).toBe('mann');
+describe('Pitch giving', () => {
+  it('voice type from the sung-back A', () => {
+    expect(classifyVoice(440)).toBe('female');
+    expect(classifyVoice(430)).toBe('female');
+    expect(classifyVoice(220)).toBe('male');
+    expect(classifyVoice(110)).toBe('male');
   });
-  it('nur Dur und Moll', () => {
-    for (let i = 0; i < 100; i++) expect(['dur', 'moll']).toContain(makePitchGivingTask().type);
+  it('only major and minor', () => {
+    for (let i = 0; i < 100; i++) expect(['major', 'minor']).toContain(makePitchGivingTask().type);
   });
-  it('erwartete Oktave je Stimmlage', () => {
+  it('expected octave per voice type', () => {
     const c4 = { step: 0, alter: 0, octave: 4 };
-    expect(expectedMidi(c4, 0, 'mann')).toBe(48);
-    expect(expectedMidi(c4, 0, 'frau')).toBe(60);
-    expect(expectedMidi(c4, 3, 'frau')).toBe(72);
-    expect(expectedMidi(c4, 3, 'mann')).toBe(60);
+    expect(expectedMidi(c4, 0, 'male')).toBe(48);
+    expect(expectedMidi(c4, 0, 'female')).toBe(60);
+    expect(expectedMidi(c4, 3, 'female')).toBe(72);
+    expect(expectedMidi(c4, 3, 'male')).toBe(60);
   });
-  it('Bewertung: Cent-Abweichung, Oktave zählt nicht als Fehler', () => {
+  it('evaluation: cent deviation, octave is not an error', () => {
     const e = toMidi({ step: 5, alter: 0, octave: 3 }); // a = 220 Hz
     expect(evaluateSung(220, e)).toMatchObject({ cents: 0, octaveShift: 0, correct: true });
     expect(evaluateSung(440, e)).toMatchObject({ cents: 0, octaveShift: 1, correct: true });
@@ -84,10 +84,15 @@ describe('Tonangabe', () => {
     expect(evaluateSung(midiToFreq(e - 0.7), e)).toMatchObject({ cents: -70, correct: false });
     expect(evaluateSung(midiToFreq(e + 2), e).correct).toBe(false);
   });
-  it('Notennamen', () => {
+  it('note names', () => {
     expect(nearestNoteName(69)).toBe('A');
     expect(nearestNoteName(70)).toBe('B');
     expect(nearestNoteName(71.2)).toBe('H');
     expect(nearestNoteName(66)).toBe('Fis');
+  });
+  it('describes intonation', () => {
+    expect(describeIntonation(0)).toBe('genau getroffen');
+    expect(describeIntonation(12)).toBe('12 Cent zu hoch');
+    expect(describeIntonation(-7)).toBe('7 Cent zu tief');
   });
 });

@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { DNote } from '../dictation/model';
 import type { IntervalPlayMode } from '../music/tasks';
 import type { VoiceType } from '../audio/pitchDetect';
+import { migrateDictations, migrateSettings, migrateStats, migrateTours } from './migrate';
 
 const PREFIX = 'harmonio:';
 
@@ -27,15 +28,15 @@ function write(key: string, value: unknown) {
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value));
   } catch {
-    // Speicher voll oder gesperrt: ignorieren
+    // Storage full or blocked: ignore
   }
 }
 
-/* ---------- Einstellungen ---------- */
+/* ---------- Settings ---------- */
 
-export type RangeLevel = 'eng' | 'mittel' | 'weit';
+export type RangeLevel = 'narrow' | 'medium' | 'wide';
 export type ThemeSetting = 'system' | 'light' | 'dark';
-export type InputMode = 'papier' | 'klaviatur' | 'notenblatt';
+export type InputMode = 'paper' | 'keyboard' | 'score';
 
 export interface Settings {
   range: RangeLevel;
@@ -48,27 +49,27 @@ export interface Settings {
   adaptive: boolean;
   showStats: boolean;
   inputMode: InputMode;
-  /** Nach richtiger Antwort automatisch zur nächsten Aufgabe */
+  /** Automatically go to the next task after a correct answer */
   autoNextCorrect: boolean;
-  /** Nach falscher Antwort automatisch zur nächsten Aufgabe */
+  /** Automatically go to the next task after a wrong answer */
   autoNextWrong: boolean;
-  /** Wartezeit in Sekunden für beide Fälle */
+  /** Delay in seconds for both cases */
   autoNextSeconds: number;
-  /** Stimmlage für die Tonangabe; null = noch nicht erkannt */
+  /** Voice type for the pitch-giving exercise; null = not detected yet */
   voiceType: VoiceType | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  range: 'mittel',
+  range: 'medium',
   theme: 'system',
-  intervalMode: 'aufwaerts',
+  intervalMode: 'ascending',
   intervalExtended: false,
   intervalNaming: false,
   chordLevel: 2,
   chordNaming: false,
   adaptive: false,
   showStats: true,
-  inputMode: 'notenblatt',
+  inputMode: 'score',
   autoNextCorrect: false,
   autoNextWrong: false,
   autoNextSeconds: 2,
@@ -76,25 +77,25 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const RANGES: Record<RangeLevel, { label: string; midi: [number, number]; text: string }> = {
-  eng: { label: 'eng', midi: [60, 72], text: "c'–c''" },
-  mittel: { label: 'mittel', midi: [55, 79], text: "g–g''" },
-  weit: { label: 'weit', midi: [48, 84], text: "c–c'''" },
+  narrow: { label: 'eng', midi: [60, 72], text: "c'–c''" },
+  medium: { label: 'mittel', midi: [55, 79], text: "g–g''" },
+  wide: { label: 'weit', midi: [48, 84], text: "c–c'''" },
 };
 
-/* ---------- Statistik ---------- */
+/* ---------- Statistics ---------- */
 
 export interface Counts {
   correct: number;
   wrong: number;
-  /** gegebene falsche Antwort → Anzahl */
+  /** given wrong answer → count */
   confusions?: Record<string, number>;
 }
 
 export interface DeviceStats {
   updated: number;
-  /** Modus → Intervall-ID → Zähler */
+  /** mode → interval ID → counts */
   intervals: Record<string, Record<string, Counts>>;
-  /** Stufe ("1" | "2") → Akkord-ID → Zähler */
+  /** level ("1" | "2") → chord ID → counts */
   chords: Record<string, Record<string, Counts>>;
   naming: { intervals: Counts; chords: Counts };
 }
@@ -108,14 +109,14 @@ function emptyDeviceStats(): DeviceStats {
   };
 }
 
-/* ---------- Diktate ---------- */
+/* ---------- Dictations ---------- */
 
 export interface DictationAttempt {
   id: string;
   dictationId: string;
   date: number;
   mode: InputMode;
-  /** Bei Papier: selbst kontrolliert, keine Zählung */
+  /** Paper mode: self-checked, not counted */
   pitchErrors: number | null;
   rhythmErrors: number | null;
   followErrors: number | null;
@@ -136,7 +137,7 @@ export interface DictationData {
   progress: Record<string, DictationProgress>;
 }
 
-/* ---------- Gesamtzustand ---------- */
+/* ---------- Overall state ---------- */
 
 export interface AppData {
   settings: Settings;
@@ -157,11 +158,11 @@ function loadDeviceId(): string {
 
 function load(): AppData {
   return {
-    settings: read('settings', DEFAULT_SETTINGS),
+    settings: migrateSettings(read('settings', DEFAULT_SETTINGS)),
     deviceId: loadDeviceId(),
-    stats: readRaw('stats', {}),
-    dictations: read<DictationData>('dictations', { attempts: [], progress: {} }),
-    tours: readRaw<string[]>('tours', []),
+    stats: migrateStats(readRaw('stats', {})),
+    dictations: migrateDictations(read<DictationData>('dictations', { attempts: [], progress: {} })),
+    tours: migrateTours(readRaw<string[]>('tours', [])),
   };
 }
 
@@ -239,7 +240,7 @@ export function recordNaming(kind: 'intervals' | 'chords', correct: boolean) {
   saveMyStats({ ...s, naming: { ...s.naming, [kind]: bump(s.naming[kind], correct) } });
 }
 
-/** Summe über alle Geräte (importierte Daten anderer Geräte eingeschlossen). */
+/** Sum over all devices (including imported data from other devices). */
 export function aggregateStats(all: Record<string, DeviceStats>): DeviceStats {
   const out = emptyDeviceStats();
   const add = (target: Record<string, Counts>, src: Record<string, Counts>) => {
@@ -270,7 +271,7 @@ export function resetStats(kind: 'exercises' | 'dictations' | 'all') {
   setState(state);
 }
 
-/* ---------- Diktate ---------- */
+/* ---------- Dictations ---------- */
 
 export function saveProgress(p: DictationProgress) {
   setState({
@@ -297,7 +298,7 @@ export function dictationStatus(data: DictationData, id: string): 'done' | 'star
   return 'new';
 }
 
-/* ---------- Touren ---------- */
+/* ---------- Tours ---------- */
 
 export function markTourSeen(id: string) {
   if (state.tours.includes(id)) return;
@@ -329,12 +330,12 @@ export function exportData(): ExportFile {
 }
 
 /**
- * Führt importierte Daten mit den vorhandenen zusammen:
- * - Einstellungen: die importierten gelten
- * - Statistik: je Gerät der neuere Stand (so wird nichts doppelt gezählt)
- * - Diktatversuche: Vereinigung (nach ID)
- * - Angefangene Diktate: der neuere Stand
- * - Gesehene Touren: Vereinigung
+ * Merges imported data with the existing data:
+ * - Settings: the imported ones win
+ * - Statistics: per device the newer state (so nothing is counted twice)
+ * - Dictation attempts: union (by ID)
+ * - Started dictations: the newer state
+ * - Seen tours: union
  */
 export function mergeData(current: Omit<AppData, 'deviceId'>, incoming: ExportFile): Omit<AppData, 'deviceId'> {
   const stats = { ...current.stats };
@@ -350,13 +351,13 @@ export function mergeData(current: Omit<AppData, 'deviceId'>, incoming: ExportFi
   for (const [id, p] of Object.entries(incoming.dictations?.progress ?? {})) {
     if (!progress[id] || p.updated > progress[id].updated) progress[id] = p;
   }
-  // Angefangene Diktate, die inzwischen geprüft wurden, nicht wiederherstellen
+  // Do not restore started dictations that have been checked since
   for (const id of Object.keys(progress)) {
     const lastAttempt = attempts.filter((a) => a.dictationId === id).pop();
     if (lastAttempt && lastAttempt.date > progress[id].updated) delete progress[id];
   }
   const settings = { ...DEFAULT_SETTINGS, ...current.settings, ...(incoming.settings ?? {}) };
-  // Eine bereits erkannte Stimmlage nicht durch „nicht festgelegt“ überschreiben
+  // Do not overwrite a detected voice type with "not set"
   settings.voiceType ??= current.settings.voiceType ?? null;
   return {
     settings,
@@ -366,8 +367,19 @@ export function mergeData(current: Omit<AppData, 'deviceId'>, incoming: ExportFi
   };
 }
 
+/** Brings an export file (possibly from an older version) up to date. */
+export function migrateExport(file: ExportFile): ExportFile {
+  return {
+    ...file,
+    settings: migrateSettings(file.settings ?? {}),
+    stats: migrateStats(file.stats ?? {}),
+    dictations: migrateDictations(file.dictations ?? { attempts: [], progress: {} }),
+    tours: migrateTours(file.tours ?? []),
+  };
+}
+
 export function importData(incoming: ExportFile) {
   if (incoming?.app !== 'harmonio') throw new Error('Die Datei stammt nicht von Harmonio.');
-  const merged = mergeData(state, incoming);
+  const merged = mergeData(state, migrateExport(incoming));
   setState({ ...state, ...merged });
 }

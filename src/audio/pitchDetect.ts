@@ -1,17 +1,17 @@
 /**
- * Tonhöhenerkennung (YIN) und Auswertung gesungener Töne.
- * Reine Funktionen ohne Browser-Abhängigkeiten, damit sie testbar sind.
+ * Pitch detection (YIN) and tracking of sung notes.
+ * Pure functions without browser dependencies so they are testable.
  */
 
 export interface PitchEstimate {
   freq: number;
-  /** 0–1, je höher, desto periodischer das Signal */
+  /** 0–1, the higher the more periodic the signal */
   clarity: number;
 }
 
 /**
- * Grundfrequenz eines Signalausschnitts nach dem YIN-Verfahren.
- * Liefert null bei Stille oder ohne klare Periodizität.
+ * Fundamental frequency of a signal frame using the YIN algorithm.
+ * Returns null for silence or without clear periodicity.
  */
 export function detectPitch(
   buf: ArrayLike<number>,
@@ -38,7 +38,7 @@ export function detectPitch(
     }
     d[tau] = sum;
   }
-  // kumulierte normierte Differenzfunktion
+  // cumulative mean normalized difference function
   const cmnd = new Float64Array(maxTau + 1);
   cmnd[0] = 1;
   let running = 0;
@@ -57,7 +57,7 @@ export function detectPitch(
   }
   if (tau < 0) return null;
 
-  // Parabelinterpolation für Genauigkeit unterhalb eines Samples
+  // parabolic interpolation for sub-sample accuracy
   let better = tau;
   if (tau > 1 && tau < maxTau) {
     const a = cmnd[tau - 1];
@@ -69,7 +69,7 @@ export function detectPitch(
   return { freq: sampleRate / better, clarity: 1 - cmnd[tau] };
 }
 
-/** Frequenz → MIDI-Nummer (nicht gerundet), a' = 440 Hz = 69. */
+/** Frequency → MIDI number (not rounded), a' = 440 Hz = 69. */
 export function freqToMidi(freq: number): number {
   return 69 + 12 * Math.log2(freq / 440);
 }
@@ -85,10 +85,10 @@ function median(values: number[]): number {
 }
 
 /**
- * Erkennt einen gehaltenen Ton: Sobald die Tonhöhe `holdMs` lang innerhalb
- * von `tolCents` stabil bleibt, wird ihre Frequenz (Median) gemeldet.
- * Danach muss erst eine Pause (oder ein anderer Ton) kommen, bevor wieder
- * gemeldet wird – so wird ein noch gehaltener Ton nicht doppelt gezählt.
+ * Detects a held note: once the pitch stays within `tolCents` for `holdMs`,
+ * its frequency (median) is reported. After that a pause (or a different
+ * note) is required before the next report, so a note that is still being
+ * held is not counted twice.
  */
 export class PitchHold {
   private samples: number[] = [];
@@ -108,12 +108,12 @@ export class PitchHold {
     this.lastVoiced = -Infinity;
   }
 
-  /** Aktuell gehaltene Tonhöhe (MIDI, ungerundet) oder null. */
+  /** Currently held pitch (MIDI, not rounded) or null. */
   current(): number | null {
     return this.samples.length ? median(this.samples) : null;
   }
 
-  /** Neuer Messwert; liefert die Frequenz eines fertig gehaltenen Tons, sonst null. */
+  /** New measurement; returns the frequency of a completed held note, else null. */
   push(time: number, freq: number | null): number | null {
     if (freq === null) {
       if (time - this.lastVoiced > this.gapMs) {
@@ -145,12 +145,12 @@ export class PitchHold {
   }
 }
 
-export type VoiceType = 'mann' | 'frau';
+export type VoiceType = 'male' | 'female';
 
 /**
- * Stimmlage nach dem nachgesungenen A: um 440 Hz → Frauenstimme,
- * um 220 Hz (oder tiefer) → Männerstimme. Grenze in der Mitte (Tritonus).
+ * Voice type from the sung-back A: around 440 Hz → female,
+ * around 220 Hz (or lower) → male. Boundary in the middle (tritone).
  */
 export function classifyVoice(freq: number): VoiceType {
-  return freq >= Math.sqrt(220 * 440) ? 'frau' : 'mann';
+  return freq >= Math.sqrt(220 * 440) ? 'female' : 'male';
 }

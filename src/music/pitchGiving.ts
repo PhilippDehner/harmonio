@@ -3,43 +3,45 @@ import { ChordType, Inversion } from './chords';
 import { Pitch, germanName, mod, toMidi } from './pitch';
 import { ChordTask, Rng, makeChordTask, pick } from './tasks';
 
-/** Tonangabe: Dur- und Moll-Akkorde mit beliebiger Umkehrung. */
+/** Pitch giving: major and minor chords in any inversion. */
 export function makePitchGivingTask(rng: Rng = Math.random): ChordTask {
-  const type = pick<ChordType>(['dur', 'moll'], rng);
-  const inversion = pick<Inversion>(['grund', 'sext', 'quartsext'], rng);
+  const type = pick<ChordType>(['major', 'minor'], rng);
+  const inversion = pick<Inversion>(['root', 'first', 'second'], rng);
   return makeChordTask(type, inversion, rng);
 }
 
-/** Reihenfolge beim Singen: von unten nach oben (Indizes in `voicing.notes`). */
+/** Singing order: bottom to top (indices into `voicing.notes`). */
 export const SING_ORDER = [3, 2, 1, 0] as const;
-export const VOICE_LABEL: Record<VoiceType, string> = { mann: 'Männerstimme', frau: 'Frauenstimme' };
 
+/** Voice part names in German (UI), indexed like `voicing.notes`. */
 export const VOICE_NAMES = ['Sopran', 'Alt', 'Tenor', 'Bass'] as const;
 
+export const VOICE_LABEL: Record<VoiceType, string> = { male: 'Männerstimme', female: 'Frauenstimme' };
+
 /**
- * Erwartete Tonhöhe für die eigene Stimmlage: Männer singen Sopran und Alt
- * eine Oktave tiefer, Frauen Tenor und Bass eine Oktave höher.
+ * Expected pitch for the singer's own voice type: men sing soprano and alto
+ * an octave lower, women sing tenor and bass an octave higher.
  */
 export function expectedMidi(p: Pitch, voiceIndex: number, voice: VoiceType): number {
   const m = toMidi(p);
-  if (voice === 'mann' && voiceIndex <= 1) return m - 12;
-  if (voice === 'frau' && voiceIndex >= 2) return m + 12;
+  if (voice === 'male' && voiceIndex <= 1) return m - 12;
+  if (voice === 'female' && voiceIndex >= 2) return m + 12;
   return m;
 }
 
 export interface SungResult {
   freq: number;
-  /** Abweichung vom Zielton in Cent (oktavunabhängig, −600 … +600) */
+  /** Deviation from the target in cents (octave-independent, −600 … +600) */
   cents: number;
-  /** Gesungene Oktave relativ zur erwarteten (z. B. −1 = eine Oktave tiefer) */
+  /** Sung octave relative to the expected one (e.g. −1 = one octave lower) */
   octaveShift: number;
   correct: boolean;
 }
 
-/** Toleranz in Cent, innerhalb derer ein Ton als richtig gilt. */
+/** Tolerance in cents within which a note counts as correct (= nearest semitone). */
 export const TOLERANCE_CENTS = 50;
 
-/** Bewertet einen gesungenen Ton; die Oktave zählt nicht als Fehler. */
+/** Evaluates a sung note; the octave does not count as an error. */
 export function evaluateSung(freq: number, expected: number): SungResult {
   const diff = freqToMidi(freq) - expected;
   const octaveShift = Math.round(diff / 12);
@@ -51,13 +53,20 @@ const NAMES: [number, number][] = [
   [0, 0], [0, 1], [1, 0], [2, -1], [2, 0], [3, 0], [3, 1], [4, 0], [5, -1], [5, 0], [6, -1], [6, 0],
 ];
 
-/** Deutscher Name der nächstgelegenen Taste, z. B. „Fis“, „B“, „Es“. */
+/** German name of the nearest key, e.g. "Fis", "B", "Es". */
 export function nearestNoteName(midi: number): string {
   const [step, alter] = NAMES[mod(Math.round(midi), 12)];
   return germanName({ step, alter });
 }
 
+/** Signed cents for live display, e.g. "+12 Cent". */
 export function formatCents(cents: number): string {
   if (cents === 0) return '±0 Cent';
   return `${cents > 0 ? '+' : '−'}${Math.abs(cents)} Cent`;
+}
+
+/** Intonation of a correct note in words, e.g. "12 Cent zu hoch". */
+export function describeIntonation(cents: number): string {
+  if (cents === 0) return 'genau getroffen';
+  return `${Math.abs(cents)} Cent zu ${cents > 0 ? 'hoch' : 'tief'}`;
 }

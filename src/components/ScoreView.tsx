@@ -8,7 +8,7 @@ type Props = Omit<RenderInput, 'width'> & {
   ariaLabel: string;
 };
 
-/** React-Hülle für den VexFlow-Notensatz mit Klickauswertung. */
+/** React wrapper for the VexFlow score with click handling. */
 export default function ScoreView({ className, onHit, ariaLabel, ...input }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const layoutRef = useRef<ScoreLayout | null>(null);
@@ -32,7 +32,7 @@ export default function ScoreView({ className, onHit, ariaLabel, ...input }: Pro
       console.error(e);
     }
   });
-  // `theme` sorgt für Neuzeichnen beim Umschalten des Farbschemas
+  // `theme` triggers a redraw when the color scheme changes
   void theme;
 
   return (

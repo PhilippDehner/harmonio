@@ -5,7 +5,7 @@ import { dictationStatus, useAppData } from '../storage/store';
 
 export default function DictationListPage() {
   const { kind: kindParam } = useParams();
-  const kind = (KINDS.includes(kindParam as DictationKind) ? kindParam : 'einstimmig') as DictationKind;
+  const kind = (KINDS.includes(kindParam as DictationKind) ? kindParam : 'monophonic') as DictationKind;
   const data = useAppData();
   const navigate = useNavigate();
   const entries = entriesOf(kind);
@@ -24,7 +24,7 @@ export default function DictationListPage() {
           disabled={entries.length === 0}
           onClick={() => {
             const e = pickRandom(kind, done);
-            if (e) navigate(`/diktat/${kind}/${e.number}`);
+            if (e) navigate(`/dictation/${kind}/${e.number}`);
           }}
         >
           🎲 Zufälliges Diktat
@@ -42,7 +42,7 @@ export default function DictationListPage() {
             const status = dictationStatus(data.dictations, e.id);
             return (
               <li key={e.id}>
-                <Link to={`/diktat/${kind}/${e.number}`}>
+                <Link to={`/dictation/${kind}/${e.number}`}>
                   <span>Diktat {e.number}</span>
                   <span
                     className={`status-icon status-${status}`}

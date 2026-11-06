@@ -8,7 +8,7 @@ export function pick<T>(items: readonly T[], rng: Rng = Math.random): T {
   return items[Math.floor(rng() * items.length)];
 }
 
-/** Gewichtete Zufallsauswahl. */
+/** Weighted random choice. */
 export function pickWeighted<T>(items: readonly T[], weights: number[], rng: Rng = Math.random): T {
   const total = weights.reduce((a, b) => a + b, 0);
   if (total <= 0) return pick(items, rng);
@@ -26,8 +26,8 @@ export interface AnswerCounts {
 }
 
 /**
- * Gewicht für die adaptive Auswahl: Je höher die (geglättete) Fehlerquote,
- * desto häufiger kommt die Aufgabe dran. Unbekannte Aufgaben liegen in der Mitte.
+ * Weight for adaptive selection: the higher the (smoothed) error rate, the
+ * more often the task comes up. Unseen tasks are in the middle.
  */
 export function adaptiveWeight(c: AnswerCounts | undefined): number {
   const correct = c?.correct ?? 0;
@@ -50,19 +50,19 @@ export function chooseAdaptive<T extends string>(
   );
 }
 
-/** Ausgangston mit höchstens einem Vorzeichen, zufällig geschrieben. */
+/** Starting pitch with at most one accidental, randomly spelled. */
 export function randomSpelling(midi: number, rng: Rng = Math.random): Pitch {
   const options = simpleSpellings(midi);
   const natural = options.find((p) => p.alter === 0);
-  if (natural) return natural; // weiße Tasten ohne Vorzeichen
+  if (natural) return natural; // white keys without accidentals
   return pick(options, rng);
 }
 
-export type IntervalPlayMode = 'harmonisch' | 'aufwaerts' | 'abwaerts';
+export type IntervalPlayMode = 'harmonic' | 'ascending' | 'descending';
 
 export interface IntervalTask {
   interval: IntervalDef;
-  /** Tatsächlich gewählte Schreibweise (Index in interval.steps) */
+  /** Spelling actually chosen (index into interval.steps) */
   stepsUsed: number;
   start: Pitch;
   second: Pitch;
@@ -75,7 +75,7 @@ export function makeIntervalTask(
   range: [number, number],
   rng: Rng = Math.random,
 ): IntervalTask {
-  const up = mode !== 'abwaerts';
+  const up = mode !== 'descending';
   const [lo, hi] = range;
   const startLo = up ? lo : lo + interval.semitones;
   const startHi = up ? hi - interval.semitones : hi;
@@ -84,7 +84,7 @@ export function makeIntervalTask(
     if (startHi >= startLo) {
       startMidi = startLo + Math.floor(rng() * (startHi - startLo + 1));
     } else {
-      // Intervall größer als der Tonumfang: um die Mitte legen
+      // Interval larger than the range: center it
       const mid = Math.round((lo + hi) / 2);
       startMidi = up ? mid - Math.floor(interval.semitones / 2) : mid + Math.ceil(interval.semitones / 2);
     }
@@ -95,7 +95,7 @@ export function makeIntervalTask(
       return { interval, stepsUsed, start, second, up };
     }
   }
-  throw new Error('Keine Aufgabe gefunden');
+  throw new Error('No task found');
 }
 
 export interface ChordTask {
@@ -124,7 +124,7 @@ export function makeChordTask(type: ChordType, inversion: Inversion, rng: Rng = 
       return { type, inversion, root, voicing: pick(voicings, rng) };
     }
   }
-  throw new Error('Kein Akkord gefunden');
+  throw new Error('No chord found');
 }
 
 export function midiOf(p: Pitch): number {
@@ -132,8 +132,8 @@ export function midiOf(p: Pitch): number {
 }
 
 /**
- * Lage einer falschen Akkordantwort zum Vergleich: gleicher Grundton,
- * gewählter Typ und gewählte Umkehrung, Lage möglichst nah an der Aufgabe.
+ * Sound of a wrong chord answer for comparison: same root, chosen type and
+ * chosen inversion, voicing as close as possible to the task.
  */
 export function answerChordVoicing(task: ChordTask, type: ChordType, inversion: Inversion): Pitch[] {
   const target = task.voicing.notes.map(toMidi);
@@ -149,7 +149,7 @@ export function answerChordVoicing(task: ChordTask, type: ChordType, inversion: 
   return best ?? chordTones(task.root, type);
 }
 
-/** Klang einer falschen Akkordantwort (MIDI), siehe answerChordVoicing. */
+/** MIDI sound of a wrong chord answer; see answerChordVoicing. */
 export function answerChordMidi(task: ChordTask, type: ChordType, inversion: Inversion): number[] {
   return answerChordVoicing(task, type, inversion).map(toMidi);
 }

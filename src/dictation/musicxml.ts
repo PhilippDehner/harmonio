@@ -32,7 +32,7 @@ function num(el: Element | null | undefined, selector: string): number | null {
   return t === null ? null : Number(t);
 }
 
-/** Direkte Kindelemente (querySelector durchsucht auch Enkel). */
+/** Direct child elements (querySelector also searches grandchildren). */
 function children(el: Element, name: string): Element[] {
   return Array.from(el.children).filter((c) => c.tagName === name);
 }
@@ -41,14 +41,14 @@ interface RawEvent {
   start: number;
   dur: Duration;
   pitches: Pitch[];
-  /** Schlüssel der Stimme innerhalb der Datei */
+  /** Key of the voice within the file */
   voiceKey: string;
 }
 
 /**
- * Liest eine MusicXML-Datei (partwise) mit dem eingeschränkten Umfang der
- * Diktatsammlung: Noten ohne Pausen und Haltebögen, Triolen, Punktierungen.
- * Akkorde innerhalb einer Stimme werden nach Tonhöhe auf Einzelstimmen verteilt.
+ * Reads a MusicXML file (partwise) with the restricted feature set of the
+ * dictation collection: notes without rests and ties, triplets, dots.
+ * Chords within a voice are split into single voices by pitch.
  */
 export function parseMusicXml(
   xml: string,
@@ -140,7 +140,7 @@ export function parseMusicXml(
     });
   });
 
-  // Stimmen bilden: Akkorde in Einzelstimmen auflösen
+  // Build voices: split chords into single voices
   const voiceKeys = Array.from(new Set(events.map((e) => e.voiceKey)));
   const voices: DNote[][] = [];
   let idCount = 0;
@@ -160,8 +160,8 @@ export function parseMusicXml(
   voices.sort((a, b) => avg(b) - avg(a));
 
   let measures: Measure[] = [];
-  if (meta.kind === 'vierstimmig') {
-    // Ein „Takt“ pro Akkord
+  if (meta.kind === 'four-part') {
+    // One "measure" per chord
     const starts = Array.from(new Set(voices.flatMap((v) => v.map((n) => n.start)))).sort((a, b) => a - b);
     const chordTicks = 96;
     measures = starts.map((_, i) => ({ start: i * chordTicks, ticks: chordTicks }));
@@ -176,7 +176,7 @@ export function parseMusicXml(
     const full = measureTicks(beats, beatType);
     let start = 0;
     measureLengths.forEach((len, i) => {
-      // Auftakt: nur der erste Takt darf kürzer sein
+      // Pickup: only the first measure may be shorter
       const ticks = i === 0 && len > 0 && len < full ? len : full;
       measures.push({ start, ticks });
       start += ticks;
