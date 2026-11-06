@@ -27,7 +27,14 @@ import {
   sungStatus,
 } from '../music/pitchGiving';
 import { ChordTask } from '../music/tasks';
-import { Settings, pitchGivingOptions, updateSettings, useSettings } from '../storage/store';
+import {
+  Settings,
+  loadPitchGivingCurrent,
+  pitchGivingOptions,
+  savePitchGivingCurrent,
+  updateSettings,
+  useSettings,
+} from '../storage/store';
 
 const A4 = 69;
 /** Ignore the microphone this long after playback so the piano does not count as singing (ms). */
@@ -239,14 +246,19 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const optionsKey = JSON.stringify(options);
   const optionsRef = useRef(options);
   optionsRef.current = options;
-  const [task, setTask] = useState<ChordTask>(() => makePitchGivingTask(options));
-  const [results, setResults] = useState<Results>([null, null, null, null]);
-  const [pos, setPos] = useState(0);
+  // Last open chord (e.g. after switching pages), if it still matches the options
+  const [saved] = useState(() => {
+    const c = loadPitchGivingCurrent<ChordTask, SungResult | null>();
+    return c && c.optionsKey === optionsKey && c.task?.voicing && c.results?.length === 4 ? c : null;
+  });
+  const [task, setTask] = useState<ChordTask>(() => saved?.task ?? makePitchGivingTask(options));
+  const [results, setResults] = useState<Results>(saved?.results ?? [null, null, null, null]);
+  const [pos, setPos] = useState(saved?.pos ?? 0);
   const [live, setLive] = useState<number | null>(null);
   const [session, setSession] = useState({ correct: 0, wrong: 0 });
   const hold = useRef(new PitchHold());
-  const posRef = useRef(0);
-  const resultsRef = useRef<Results>([null, null, null, null]);
+  const posRef = useRef(saved?.pos ?? 0);
+  const resultsRef = useRef<Results>(saved?.results ?? [null, null, null, null]);
   const timer = useRef<number | null>(null);
   const order = singOrder(task.voicing, task.root, task.type, settings.singOrder);
   const orderRef = useRef(order);
@@ -305,6 +317,11 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const skip = () => {
     if (confirm('Diesen Akkord wirklich überspringen? Er zählt nicht in der Statistik.')) next();
   };
+
+  // Remember the open chord and the notes sung so far
+  useEffect(() => {
+    savePitchGivingCurrent({ optionsKey: JSON.stringify(optionsRef.current), task, results, pos });
+  }, [task, results, pos]);
 
   // Difficulty changed: new chord matching the options
   const firstOptions = useRef(true);

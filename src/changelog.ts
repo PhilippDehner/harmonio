@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.5.1',
+    date: '2026-11-06',
+    changes: [
+      'Tonangabe: Der zuletzt offene Akkord bleibt erhalten, wenn man die Seite wechselt und zurückkommt – samt den schon gesungenen Tönen.',
+    ],
+  },
+  {
     version: '1.5.0',
     date: '2026-11-06',
     changes: [
