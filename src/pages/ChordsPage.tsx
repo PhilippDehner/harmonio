@@ -110,6 +110,8 @@ export default function ChordsPage() {
   const needsInversion = (type: ChordType | null) => level === 2 && type !== null && type !== 'uberm';
 
   function evaluate(type: ChordType, inversion: Inversion | null) {
+    // Ausstehende automatische Wiedergabe abbrechen, sonst überdeckt sie später „Deine Antwort“.
+    if (timer.current) window.clearTimeout(timer.current);
     stopAll();
     const checkInv = level === 2 && task.type !== 'uberm';
     const correctId = chordAnswerId(task.type, checkInv ? task.inversion : null);
