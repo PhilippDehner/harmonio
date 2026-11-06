@@ -59,6 +59,8 @@ function ChangelogDialog({ entries, title, onClose }: { entries: ChangelogEntry[
       aria-modal="true"
       aria-labelledby="whats-new-title"
       onKeyDown={(e) => e.key === 'Escape' && onClose()}
+      // Close on a click outside the dialog box
+      onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="dialog stack changelog">
         <h2 id="whats-new-title" style={{ marginTop: 0 }}>
