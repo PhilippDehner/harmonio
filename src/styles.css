@@ -998,3 +998,16 @@ button.primary kbd.hint {
   text-transform: uppercase;
   line-height: 1.5;
 }
+
+/* Theme switch in the header (light / system / dark) */
+.theme-switch {
+  margin-left: 4px;
+}
+
+.theme-switch button {
+  min-height: 32px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
