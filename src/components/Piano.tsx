@@ -11,13 +11,18 @@ interface Props {
   pressOnDown?: boolean;
   /** Custom spelling for key labels (default: according to the key signature). */
   spell?: (midi: number) => Pitch;
+  /** Width of a white key in px (default 40). */
+  keyWidth?: number;
 }
 
-const WHITE_W = 40;
-const BLACK_W = 26;
+const DEFAULT_WHITE_W = 40;
+/** Black keys relative to white keys. */
+const BLACK_RATIO = 26 / 40;
 
 /** On-screen keyboard; black keys are named according to the key signature. */
-export default function Piano({ low, high, keyFifths, onKey, disabled, pressOnDown, spell }: Props) {
+export default function Piano({ low, high, keyFifths, onKey, disabled, pressOnDown, spell, keyWidth }: Props) {
+  const WHITE_W = keyWidth ?? DEFAULT_WHITE_W;
+  const BLACK_W = Math.round(WHITE_W * BLACK_RATIO);
   const wrap = useRef<HTMLDivElement>(null);
   const downHandled = useRef(false);
   // Extend the range to white keys
@@ -42,7 +47,7 @@ export default function Piano({ low, high, keyFifths, onKey, disabled, pressOnDo
     const c4 = keys.find((k) => k.midi === 60);
     if (c4) el.scrollLeft = Math.max(0, c4.x - el.clientWidth / 2 + WHITE_W);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lo, hi]);
+  }, [lo, hi, WHITE_W]);
 
   return (
     <div className="piano-wrap" ref={wrap}>
@@ -55,7 +60,15 @@ export default function Piano({ low, high, keyFifths, onKey, disabled, pressOnDo
             <button
               key={k.midi}
               className={k.black ? 'black' : 'white'}
-              style={k.black ? { left: k.x } : undefined}
+              style={
+                keyWidth === undefined
+                  ? k.black
+                    ? { left: k.x }
+                    : undefined
+                  : k.black
+                    ? { left: k.x, width: BLACK_W, minWidth: BLACK_W }
+                    : { width: WHITE_W, minWidth: WHITE_W }
+              }
               disabled={disabled}
               onPointerDown={
                 pressOnDown

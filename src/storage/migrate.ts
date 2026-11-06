@@ -74,6 +74,10 @@ export function migrateSettings<T extends AnyRecord>(settings: T): T {
   if (typeof s.intervalMode === 'string') s.intervalMode = map(INTERVAL_MODES, s.intervalMode);
   if (typeof s.inputMode === 'string') s.inputMode = map(INPUT_MODES, s.inputMode);
   if ('tuningA4' in s) s.tuningA4 = clampA4(s.tuningA4);
+  if ('pianoKeySize' in s) {
+    const n = Math.round(Number(s.pianoKeySize));
+    s.pianoKeySize = Number.isFinite(n) ? Math.min(5, Math.max(1, n)) : 3;
+  }
   return s as T;
 }
 

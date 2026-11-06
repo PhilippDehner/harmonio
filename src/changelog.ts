@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.0',
+    date: '2026-11-06',
+    changes: [
+      'Einstellungen: Tastenbreite des ausklappbaren Klaviers (🎹) in fünf Stufen wählbar – schmal für mehr Tasten auf einmal, breit zum leichteren Treffen.',
+    ],
+  },
+  {
     version: '1.6.0',
     date: '2026-11-06',
     changes: [

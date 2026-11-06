@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { playKey } from '../audio/engine';
 import { mod, simpleSpellings, type Pitch } from '../music/pitch';
+import { PIANO_KEY_WIDTH, useSettings } from '../storage/store';
 import Piano from './Piano';
 
 /** Chromatic spelling for the free keyboard: cis, es, fis, gis, b. */
@@ -15,12 +16,16 @@ function spellChromatic(midi: number): Pitch {
 /** Collapsible keyboard available on every page to play single notes. */
 export default function PianoDock() {
   const [open, setOpen] = useState(false);
+  const { pianoKeySize } = useSettings();
   return (
     <>
       {open && <div className="piano-dock-spacer" aria-hidden="true" />}
       {open && (
         <div className="piano-dock" role="region" aria-label="Klavier">
-          <Piano low={36} high={96} keyFifths={0} onKey={(m) => void playKey(m)} pressOnDown spell={spellChromatic} />
+          <Piano
+            low={36} high={96} keyFifths={0} onKey={(m) => void playKey(m)} pressOnDown spell={spellChromatic}
+            keyWidth={PIANO_KEY_WIDTH[pianoKeySize]}
+          />
         </div>
       )}
       <button

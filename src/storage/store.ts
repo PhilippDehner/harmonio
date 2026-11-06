@@ -75,7 +75,14 @@ export interface Settings {
   pgWide: boolean;
   /** Pitch giving: also inversions (otherwise the bass always sings the root) */
   pgInversions: boolean;
+  /** Key width of the collapsible keyboard, level 1 (narrow) to 5 (wide) */
+  pianoKeySize: PianoKeySize;
 }
+
+export type PianoKeySize = 1 | 2 | 3 | 4 | 5;
+export const PIANO_KEY_SIZES: PianoKeySize[] = [1, 2, 3, 4, 5];
+/** White key width in px per level. */
+export const PIANO_KEY_WIDTH: Record<PianoKeySize, number> = { 1: 24, 2: 32, 3: 40, 4: 50, 5: 60 };
 
 export const DEFAULT_SETTINGS: Settings = {
   range: 'medium',
@@ -100,6 +107,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pgMinor: false,
   pgWide: false,
   pgInversions: false,
+  pianoKeySize: 3,
 };
 
 /** Pitch-giving options from the settings. */
