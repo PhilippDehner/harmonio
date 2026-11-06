@@ -109,6 +109,57 @@ function headerWidth(keyFifths: number, withTime: boolean) {
   return 40 + Math.abs(keyFifths) * 10 + (withTime ? 30 : 0);
 }
 
+/** Notes of a staff in a measure, grouped by onset (chords), each group sorted by pitch. */
+function staffGroups(input: RenderInput, staffDef: StaffDef, m: Measure) {
+  const notes = staffDef.voices
+    .flatMap((v) => input.voices[v] ?? [])
+    .filter((n) => n.start >= m.start && n.start < m.start + m.ticks);
+  const groups = new Map<number, DNote[]>();
+  for (const n of notes) {
+    const g = groups.get(n.start) ?? [];
+    g.push(n);
+    groups.set(n.start, g);
+  }
+  const starts = Array.from(groups.keys()).sort((a, b) => a - b);
+  starts.forEach((s) => groups.get(s)!.sort((a, b) => toMidi(a.pitch) - toMidi(b.pitch)));
+  const accs = accidentalsInMeasure(
+    starts.flatMap((s) => groups.get(s)!.map((n) => n.pitch)),
+    input.keyFifths,
+  );
+  const accMap = new Map<string, string | null>();
+  starts.flatMap((s) => groups.get(s)!).forEach((n, i) => accMap.set(n.id, accs[i]));
+  return { notes, groups, starts, accMap };
+}
+
+/** Space needed left of the first note in a measure (accidentals of the first chord). */
+function leadingModifierWidth(input: RenderInput, m: Measure): number {
+  let max = 0;
+  for (const staffDef of input.staves) {
+    const { groups, starts, accMap } = staffGroups(input, staffDef, m);
+    const first = starts[0];
+    if (first === undefined || first !== m.start) continue;
+    const g = groups.get(first)!;
+    if (!g.some((n) => accMap.get(n.id))) continue;
+    try {
+      const sn = new StaveNote({ keys: g.map((n) => vexKey(n.pitch)), duration: vexDuration(g[0].dur), clef: staffDef.clef });
+      g.forEach((n, i) => {
+        const a = accMap.get(n.id);
+        if (a) sn.addModifier(new Accidental(a), i);
+      });
+      sn.setStave(new Stave(0, 0, 100));
+      const mc = new ModifierContext();
+      sn.addToModifierContext(mc);
+      const tc = new TickContext();
+      tc.addTickable(sn);
+      tc.preFormat();
+      max = Math.max(max, sn.getMetrics().modLeftPx);
+    } catch {
+      /* ignore */
+    }
+  }
+  return max;
+}
+
 function getCssColor(el: HTMLElement, name: string, fallback: string) {
   const v = getComputedStyle(el).getPropertyValue(name).trim();
   return v || fallback;
@@ -132,6 +183,13 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
   const keySpec = keySignatureName(input.keyFifths);
   const timeSpec = `${input.beats}/${input.beatType}`;
 
+  // Extra space for accidentals before the first note (beyond the default 12px)
+  const leadCache = new Map<number, number>();
+  const leadExtra = (m: Measure) => {
+    if (!leadCache.has(m.start)) leadCache.set(m.start, Math.max(0, leadingModifierWidth(input, m) + 4 - 12));
+    return leadCache.get(m.start)!;
+  };
+
   // Build systems (lines)
   type Sys = { measures: { index: number; width: number }[] };
   const systems: Sys[] = [];
@@ -141,7 +199,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
     const m = input.measures[idx];
     const first = cur.measures.length === 0;
     const header = first ? headerWidth(input.keyFifths, input.showTime && systems.length === 0) : 0;
-    const w = Math.max(70, (m.ticks / 24) * pxq) + 30 + header;
+    const w = Math.max(70, (m.ticks / 24) * pxq) + 30 + header + leadExtra(m);
     if (!first && used + w > logicalWidth - 4) {
       systems.push(cur);
       cur = { measures: [] };
@@ -211,7 +269,8 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
           ctx.restore();
         }
 
-        const noteStart = stave.getNoteStartX() + 12;
+        const pad = stave.getNoteStartX() + 12;
+        const noteStart = pad + leadExtra(m);
         const noteEnd = x + w - 14;
         ml.x0 = noteStart * scale;
         ml.x1 = noteEnd * scale;
@@ -226,26 +285,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
 
         const xForTick = (tick: number) => noteStart + ((tick - m.start) / m.ticks) * (noteEnd - noteStart);
 
-        // Notes of this staff in the measure, grouped by onset (chords)
-        const notes = staffDef.voices
-          .flatMap((v) => input.voices[v] ?? [])
-          .filter((n) => n.start >= m.start && n.start < m.start + m.ticks);
-        const groups = new Map<number, DNote[]>();
-        for (const n of notes) {
-          const g = groups.get(n.start) ?? [];
-          g.push(n);
-          groups.set(n.start, g);
-        }
-        const starts = Array.from(groups.keys()).sort((a, b) => a - b);
-        // Accidentals
-        const seq: { note: DNote }[] = [];
-        starts.forEach((s) => {
-          const g = groups.get(s)!.sort((a, b) => toMidi(a.pitch) - toMidi(b.pitch));
-          g.forEach((n) => seq.push({ note: n }));
-        });
-        const accs = accidentalsInMeasure(seq.map((q) => q.note.pitch), input.keyFifths);
-        const accMap = new Map<string, string | null>();
-        seq.forEach((q, i) => accMap.set(q.note.id, accs[i]));
+        const { notes, groups, starts, accMap } = staffGroups(input, staffDef, m);
 
         type Item = { start: number; dur: Duration; group?: DNote[]; wholeMeasure?: boolean };
         const items: Item[] = starts.map((s) => ({ start: s, dur: groups.get(s)![0].dur, group: groups.get(s)! }));
@@ -289,7 +329,6 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
               const tc = new TickContext();
               tc.addTickable(sn);
               tc.preFormat();
-              const pad = stave.getNoteStartX() + 12;
               const rx = item.wholeMeasure ? (noteStart + noteEnd) / 2 - 6 : xForTick(s);
               tc.setX(rx - pad);
               sn.setContext(ctx);
@@ -322,7 +361,6 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
             const tc = new TickContext();
             tc.addTickable(sn);
             tc.preFormat();
-            const pad = stave.getNoteStartX() + 12;
             tc.setX(xForTick(s) - pad);
             sn.setContext(ctx);
             vfNotes.push(sn);
