@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.2.0',
+    date: '2026-11-06',
+    changes: [
+      'Neu: Tonangabe für den vierstimmigen gemischten Chor. Akkord lesen, vom A (440 Hz) aus die vier Töne finden und nachsingen; Auswertung per Mikrofon mit Abweichung in Cent.',
+      'Tonangabe: Falsch gesungene Töne lassen sich einzeln oder als Akkord am Klavier anhören und werden als Notenbild angezeigt.',
+      'Die Stimmlage (Männer- oder Frauenstimme) wird beim ersten Mal über das nachgesungene A erkannt und in den Einstellungen gespeichert.',
+      'Startseite: Auswahl zwischen Gehörbildung und Tonangabe.',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-11-06',
     changes: [
