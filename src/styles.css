@@ -465,6 +465,22 @@ input[type='number']:disabled {
   height: 18px;
 }
 
+/* Framed group of related options, e.g. checkboxes of which one must stay checked */
+.option-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 4px 12px;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.option-group-label {
+  font-weight: 600;
+}
+
 .segmented {
   display: inline-flex;
   border: 1px solid var(--border);
