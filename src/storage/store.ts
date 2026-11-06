@@ -352,6 +352,25 @@ export function dictationStatus(data: DictationData, id: string): 'done' | 'star
   return 'new';
 }
 
+/* ---------- Pitch giving: last open exercise ---------- */
+
+/** The chord last open in the pitch-giving exercise, so it is still there after switching pages. */
+export interface PitchGivingCurrent<Task = unknown, Result = unknown> {
+  /** Options the task was made with (JSON); a different value means the task no longer fits */
+  optionsKey: string;
+  task: Task;
+  results: Result[];
+  pos: number;
+}
+
+export function loadPitchGivingCurrent<Task, Result>(): PitchGivingCurrent<Task, Result> | null {
+  return readRaw<PitchGivingCurrent<Task, Result> | null>('pitchGivingCurrent', null);
+}
+
+export function savePitchGivingCurrent(current: PitchGivingCurrent) {
+  write('pitchGivingCurrent', current);
+}
+
 /* ---------- Tours ---------- */
 
 export function markTourSeen(id: string) {

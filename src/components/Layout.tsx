@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { APP_VERSION, GITHUB_URL, LINKEDIN_URL, REPO_URL, SITE_NAME } from '../config';
 import { updateSettings, useSettings } from '../storage/store';
 import AudioHint from './AudioHint';
+import PianoDock from './PianoDock';
 import WhatsNew, { ChangelogButton } from './WhatsNew';
 
 function ThemeToggle() {
@@ -58,6 +59,7 @@ export default function Layout() {
         </p>
       </footer>
       {isExercise && <AudioHint />}
+      <PianoDock />
       <WhatsNew />
     </>
   );

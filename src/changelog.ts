@@ -11,9 +11,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.5.1',
+    date: '2026-11-06',
+    changes: [
+      'Tonangabe: Der zuletzt offene Akkord bleibt erhalten, wenn man die Seite wechselt und zurückkommt – samt den schon gesungenen Tönen.',
+    ],
+  },
+  {
     version: '1.5.0',
     date: '2026-11-06',
     changes: [
+      'Neu: Auf jeder Seite lässt sich über den 🎹-Knopf unten rechts ein Klavier ausklappen, um einzelne Töne anzuspielen. Die schwarzen Tasten heißen cis, es, fis, gis und b.',
       'Tonangabe: Neue Einstellung „Bass“ – ohne Haken singt der Bass immer den Grundton (Standard), mit „auch Umkehrungen“ auch Terz oder Quinte.',
     ],
   },
