@@ -14,6 +14,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: '2026-11-06',
     changes: [
       'Neu: Stimmton in den Einstellungen wählbar (a′ = 410–450 Hz, Standard 440 Hz). Gilt für alle Klänge und für die Auswertung in der Tonangabe.',
+      'Tonangabe: Reihenfolge der Töne wählbar – von unten nach oben, von oben nach unten oder nach Funktion (Grundton, Quinte, Terz), auch in den Einstellungen.',
+      'Tonangabe: Mikrofon lässt sich wieder ausschalten, z. B. um dir selbst Töne vorzusingen.',
     ],
   },
   {

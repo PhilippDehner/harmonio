@@ -1,7 +1,16 @@
 import { clampA4, setA4 } from '../audio/tuning';
 import { describe, expect, it } from 'vitest';
 import { PitchHold, classifyVoice, detectPitch, freqToMidi, midiToFreq } from '../audio/pitchDetect';
-import { describeIntonation, evaluateSung, expectedMidi, makePitchGivingTask, nearestNoteName, sungPitch } from '../music/pitchGiving';
+import {
+  describeIntonation,
+  evaluateSung,
+  expectedMidi,
+  functionName,
+  makePitchGivingTask,
+  nearestNoteName,
+  singOrder,
+  sungPitch,
+} from '../music/pitchGiving';
 import { germanName, toMidi } from '../music/pitch';
 
 const SR = 48000;
@@ -126,5 +135,35 @@ describe('Pitch giving', () => {
     expect(germanName(up)).toBe('Fis');
     expect(germanName(sungPitch(f3, evaluateSung(midiToFreq(54), 53), flatRoot))).toBe('Ges');
     expect(toMidi(sungPitch(f3, evaluateSung(midiToFreq(50), 53), sharpRoot))).toBe(50);
+  });
+});
+
+describe('Singing order', () => {
+  // C major, root position: soprano e'', alto c'', tenor g', bass c
+  const root = { step: 0, alter: 0, octave: 3 };
+  const voicing = {
+    notes: [
+      { step: 2, alter: 0, octave: 5 },
+      { step: 0, alter: 0, octave: 5 },
+      { step: 4, alter: 0, octave: 4 },
+      { step: 0, alter: 0, octave: 3 },
+    ] as [typeof root, typeof root, typeof root, typeof root],
+  };
+  it('sings bottom up or top down', () => {
+    expect(singOrder(voicing, root, 'major', 'up')).toEqual([3, 2, 1, 0]);
+    expect(singOrder(voicing, root, 'major', 'down')).toEqual([0, 1, 2, 3]);
+  });
+  it('sings both roots first (lower first), then fifth, then third', () => {
+    expect(singOrder(voicing, root, 'major', 'function')).toEqual([3, 1, 2, 0]);
+    expect(voicing.notes.map((p) => functionName(p, root, 'major'))).toEqual(['Terz', 'Grundton', 'Quinte', 'Grundton']);
+  });
+  it('covers every voice exactly once for random tasks', () => {
+    for (let i = 0; i < 200; i++) {
+      const t = makePitchGivingTask();
+      const o = singOrder(t.voicing, t.root, t.type, 'function');
+      expect([...o].sort()).toEqual([0, 1, 2, 3]);
+      const names = o.map((vi) => functionName(t.voicing.notes[vi], t.root, t.type));
+      expect(names).toEqual(['Grundton', 'Grundton', 'Quinte', 'Terz']);
+    }
   });
 });

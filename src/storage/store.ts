@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { DNote } from '../dictation/model';
 import type { IntervalPlayMode } from '../music/tasks';
 import type { VoiceType } from '../audio/pitchDetect';
+import type { SingOrder } from '../music/pitchGiving';
 import { DEFAULT_A4, setA4 } from '../audio/tuning';
 import { migrateDictations, migrateSettings, migrateStats, migrateTours } from './migrate';
 
@@ -58,6 +59,8 @@ export interface Settings {
   autoNextSeconds: number;
   /** Voice type for the pitch-giving exercise; null = not detected yet */
   voiceType: VoiceType | null;
+  /** Order in which the notes are sung in the pitch-giving exercise */
+  singOrder: SingOrder;
   /** Concert pitch a' in Hz (410–450) */
   tuningA4: number;
 }
@@ -77,6 +80,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoNextWrong: false,
   autoNextSeconds: 2,
   voiceType: null,
+  singOrder: 'up',
   tuningA4: DEFAULT_A4,
 };
 

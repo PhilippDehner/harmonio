@@ -10,7 +10,7 @@ import { LiveStats } from '../components/StatsViews';
 import { useTour } from '../components/Tour';
 import { Pitch, germanName, germanNameWithOctave, toMidi } from '../music/pitch';
 import {
-  SING_ORDER,
+  SING_ORDERS,
   VOICE_LABEL,
   SungResult,
   VOICE_NAMES,
@@ -18,8 +18,10 @@ import {
   expectedMidi,
   describeIntonation,
   formatCents,
+  functionName,
   makePitchGivingTask,
   nearestNoteName,
+  singOrder,
   sungPitch,
 } from '../music/pitchGiving';
 import { ChordTask } from '../music/tasks';
@@ -57,7 +59,11 @@ function MicControls({ mic }: { mic: Mic }) {
           🎤 Mikrofon einschalten
         </button>
       )}
-      {mic.state === 'on' && <span className="muted small">🎤 Mikrofon an</span>}
+      {mic.state === 'on' && (
+        <button onClick={mic.stop} title="Mikrofon ausschalten, z. B. um dir selbst Töne vorzusingen">
+          🎤 Mikrofon ausschalten
+        </button>
+      )}
     </>
   );
 }
@@ -166,23 +172,26 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const posRef = useRef(0);
   const resultsRef = useRef<Results>([null, null, null, null]);
   const timer = useRef<number | null>(null);
-  const done = pos >= SING_ORDER.length;
+  const order = singOrder(task.voicing, task.root, task.type, settings.singOrder);
+  const orderRef = useRef(order);
+  orderRef.current = order;
+  const done = pos >= order.length;
 
   const tour = useTour('pitch-giving', [
     { title: 'Tonangabe', text: `Du siehst einen vierstimmigen Akkord und hörst nur das A (${settings.tuningA4} Hz). Finde davon ausgehend die Töne des Akkords.` },
     { selector: '#tg-a', title: 'A abspielen', text: 'Spiele das A beliebig oft ab (Leertaste).' },
-    { selector: '#tg-voices', title: 'Singen', text: 'Singe die vier Töne nacheinander von unten nach oben (Bass, Tenor, Alt, Sopran) und halte jeden kurz, bis er erkannt ist. Du musst nichts anklicken: Nach jedem erkannten Ton geht es automatisch mit der nächsten Stimme weiter. Setze zwischen den Tönen nur kurz ab.' },
+    { selector: '#tg-voices', title: 'Singen', text: `Singe die vier Töne nacheinander ${SING_ORDERS.find((o) => o.id === settings.singOrder)!.text} und halte jeden kurz, bis er erkannt ist. Du musst nichts anklicken: Nach jedem erkannten Ton geht es automatisch mit der nächsten Stimme weiter. Setze zwischen den Tönen nur kurz ab. Die Reihenfolge wählst du oben unter „Reihenfolge“.` },
   ]);
 
   handler.current = (freq, time) => {
-    if (posRef.current >= SING_ORDER.length) return;
+    if (posRef.current >= orderRef.current.length) return;
     const r = hold.current.push(time, freq);
     setLive(hold.current.current());
     if (r === null) return;
-    const vi = SING_ORDER[posRef.current];
+    const vi = orderRef.current[posRef.current];
     const res = evaluateSung(r, expectedMidi(task.voicing.notes[vi], vi, voice));
     posRef.current += 1;
-    const finished = posRef.current >= SING_ORDER.length;
+    const finished = posRef.current >= orderRef.current.length;
     const updated = [...resultsRef.current];
     updated[vi] = res;
     resultsRef.current = updated;
@@ -224,6 +233,13 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Microphone switched off: forget a half-held note
+  useEffect(() => {
+    if (mic.state === 'on') return;
+    hold.current.reset();
+    setLive(null);
+  }, [mic.state]);
 
   const chordMidi = task.voicing.notes.map(toMidi);
 
@@ -269,6 +285,22 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
         <Link to="/settings" className="small">
           ändern
         </Link>
+        <div className="segmented" role="group" aria-label="Reihenfolge">
+          {SING_ORDERS.map((o) => (
+            <button
+              key={o.id}
+              aria-pressed={settings.singOrder === o.id}
+              title={`Singen ${o.text}`}
+              onClick={() => {
+                // Order changed in the middle of singing: start over
+                if (o.id !== settings.singOrder && !done) resetSinging();
+                updateSettings({ singOrder: o.id });
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
         <label className="toggle">
           <input type="checkbox" checked={settings.showStats} onChange={(e) => updateSettings({ showStats: e.target.checked })} />
           Statistik
@@ -328,13 +360,18 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
       <div id="tg-voices" className="card">
         <table className="voice-list">
           <tbody>
-            {SING_ORDER.map((vi, i) => {
+            {order.map((vi, i) => {
               const r = results[vi];
               const current = i === pos && !done;
               const target = germanName(task.voicing.notes[vi]);
               return (
                 <tr key={vi} className={current ? 'current' : r ? (r.correct ? 'ok' : 'err') : ''}>
-                  <th scope="row">{VOICE_NAMES[vi]}</th>
+                  <th scope="row">
+                    {VOICE_NAMES[vi]}
+                    {settings.singOrder === 'function' && (
+                      <span className="muted small"> ({functionName(task.voicing.notes[vi], task.root, task.type)})</span>
+                    )}
+                  </th>
                   <td>
                     {r ? (
                       r.correct ? (
@@ -374,7 +411,9 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
                           <span className="muted small"> (danach automatisch weiter)</span>
                         </>
                       ) : (
-                        <span className="muted">Mikrofon einschalten, dann singen</span>
+                        <span className="muted">
+                          {pos > 0 ? 'Mikrofon aus – zum Weitersingen einschalten' : 'Mikrofon einschalten, dann singen'}
+                        </span>
                       )
                     ) : (
                       <span className="muted">–</span>
