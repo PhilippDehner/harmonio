@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
     <title>Harmonio</title>
     <script>
-      // Theme vor dem ersten Zeichnen setzen (kein Aufblitzen)
+      // Set the theme before the first paint (no flash)
       try {
         var s = JSON.parse(localStorage.getItem('harmonio:settings') || '{}');
         if (s.theme === 'light' || s.theme === 'dark') document.documentElement.dataset.theme = s.theme;

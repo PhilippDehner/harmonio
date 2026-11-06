@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { DEFAULT_A4, MAX_A4, MIN_A4 } from '../audio/tuning';
+import { SING_ORDERS, VOICE_LABEL } from '../music/pitchGiving';
 import { RANGES, RangeLevel, ThemeSetting, exportData, importData, updateSettings, useSettings } from '../storage/store';
 
 async function shareOrDownload(): Promise<string> {
@@ -28,8 +30,9 @@ export default function SettingsPage() {
   const settings = useSettings();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  // Entwurf des Eingabefelds, damit es beim Tippen auch leer sein darf
+  // Draft value of the input field, so it may be empty while typing
   const [secondsDraft, setSecondsDraft] = useState<string | null>(null);
+  const [a4Draft, setA4Draft] = useState<string | null>(null);
 
   return (
     <div className="stack">
@@ -47,6 +50,34 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="card stack">
+        <h2 style={{ marginTop: 0 }}>Stimmton</h2>
+        <p className="muted small" style={{ margin: 0 }}>
+          Frequenz des Kammertons a′ ({MIN_A4}–{MAX_A4} Hz). Gilt für alle Klänge und für die Auswertung beim Singen.
+        </p>
+        <label className="row" style={{ gap: 6 }}>
+          a′ =
+          <input
+            type="number"
+            min={MIN_A4}
+            max={MAX_A4}
+            step={1}
+            value={a4Draft ?? settings.tuningA4}
+            onChange={(e) => {
+              setA4Draft(e.target.value);
+              const v = Math.round(Number(e.target.value));
+              if (e.target.value !== '' && v >= MIN_A4 && v <= MAX_A4) updateSettings({ tuningA4: v });
+            }}
+            onBlur={() => setA4Draft(null)}
+            style={{ width: '5em' }}
+          />
+          Hz
+          <button onClick={() => updateSettings({ tuningA4: DEFAULT_A4 })} disabled={settings.tuningA4 === DEFAULT_A4}>
+            Standard ({DEFAULT_A4} Hz)
+          </button>
+        </label>
       </div>
 
       <div className="card stack">
@@ -111,6 +142,46 @@ export default function SettingsPage() {
           />
           Sekunden
         </label>
+      </div>
+
+      <div className="card stack">
+        <h2 style={{ marginTop: 0 }}>Stimmlage (Tonangabe)</h2>
+        <p className="muted small" style={{ margin: 0 }}>
+          Bestimmt, in welcher Oktave du die Töne singst: Männer singen Sopran und Alt eine Oktave tiefer, Frauen Tenor
+          und Bass eine Oktave höher. „Neu erkennen“ startet beim nächsten Öffnen der Tonangabe die Erkennung per Mikrofon.
+        </p>
+        <div className="row">
+          <div className="segmented" role="group" aria-label="Stimmlage">
+            {(['male', 'female'] as const).map((v) => (
+              <button key={v} aria-pressed={settings.voiceType === v} onClick={() => updateSettings({ voiceType: v })}>
+                {VOICE_LABEL[v]}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => updateSettings({ voiceType: null })} disabled={settings.voiceType === null}>
+            Neu erkennen
+          </button>
+        </div>
+      </div>
+
+      <div className="card stack">
+        <h2 style={{ marginTop: 0 }}>Reihenfolge der Töne (Tonangabe)</h2>
+        <p className="muted small" style={{ margin: 0 }}>
+          In welcher Reihenfolge du die vier Töne singst. Nach Funktion kommen zuerst beide Grundtöne (der tiefere
+          zuerst), dann Quinte und Terz.
+        </p>
+        <div className="segmented" role="group" aria-label="Reihenfolge der Töne">
+          {SING_ORDERS.map((o) => (
+            <button
+              key={o.id}
+              aria-pressed={settings.singOrder === o.id}
+              title={`Singen ${o.text}`}
+              onClick={() => updateSettings({ singOrder: o.id })}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="card stack">

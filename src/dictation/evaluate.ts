@@ -11,7 +11,7 @@ export interface NoteResult {
 
 export interface VoiceResult {
   notes: NoteResult[];
-  /** Lösungsnoten, deren Einsatz der Eingabe völlig fehlt */
+  /** Solution notes whose onset is missing entirely from the input */
   missing: string[];
   pitchErrors: number;
   followErrors: number;
@@ -24,7 +24,7 @@ export interface EvaluationSummary {
   rhythmErrors: number;
 }
 
-/** Bezugsnote der Lösung: gleicher Einsatz, sonst die zu diesem Zeitpunkt klingende. */
+/** Reference note of the solution: same onset, otherwise the one sounding at that time. */
 function referenceNote(solution: DNote[], start: number): DNote | undefined {
   return (
     solution.find((s) => s.start === start) ??
@@ -33,17 +33,17 @@ function referenceNote(solution: DNote[], start: number): DNote | undefined {
 }
 
 /**
- * Wertet eine Stimme aus.
+ * Evaluates one voice.
  *
- * Tonhöhe: Eine Note ist richtig, wenn sie exakt (inkl. Schreibweise und
- * Oktave) mit der Bezugsnote der Lösung übereinstimmt. Ist sie falsch, die
- * vorherige eigene Note aber ebenfalls falsch und stimmt der (diatonische)
- * Abstand zur vorherigen Note mit dem Abstand in der Lösung überein, ist es
- * ein Folgefehler. Sonst ist es ein Fehler (die Ursache).
+ * Pitch: a note is correct if it matches the reference note of the solution
+ * exactly (including spelling and octave). If it is wrong, but the previous
+ * user note is wrong as well and the (diatonic) distance to the previous note
+ * matches the distance in the solution, it is a follow-up error. Otherwise it
+ * is an error (the cause).
  *
- * Rhythmus: Eine Note ist rhythmisch falsch, wenn es in der Lösung keine Note
- * mit gleichem Einsatz und gleicher Dauer gibt. Zusätzlich zählen Einsätze der
- * Lösung, die in der Eingabe von keiner Note abgedeckt werden.
+ * Rhythm: a note is rhythmically wrong if the solution has no note with the
+ * same onset and duration. Additionally, onsets of the solution that are not
+ * covered by any input note are counted.
  */
 export function evaluateVoice(solutionIn: DNote[], inputIn: DNote[]): VoiceResult {
   const solution = sortNotes(solutionIn);
@@ -105,10 +105,10 @@ export function summarize(results: VoiceResult[]): EvaluationSummary {
 }
 
 /**
- * Vierstimmiger Satz: Die Oberstimmen werden je Akkord nach Tonhöhe auf
- * Sopran, Alt und Tenor verteilt. Danach wird jede Stimme wie eine Melodie
- * ausgewertet (ohne Rhythmus, alle Akkorde sind gleich lang).
- * Fehlende Töne zählen als Tonhöhenfehler.
+ * Four-part chorale: the upper notes of each chord are assigned to soprano,
+ * alto and tenor by pitch. Then each voice is evaluated like a melody
+ * (without rhythm, all chords have the same length).
+ * Missing notes count as pitch errors.
  */
 export function evaluateChorale(solution: DNote[][], input: DNote[][]): VoiceResult[] {
   return solution.map((sol, i) => {

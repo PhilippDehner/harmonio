@@ -1,7 +1,7 @@
 import * as Tone from 'tone';
-import { midiToToneName } from '../music/pitch';
+import { midiToFreq } from './pitchDetect';
 
-/** Vorhandene Salamander-Samples (alle kleinen Terzen), Rest wird interpoliert. */
+/** Available Salamander samples (every minor third); the rest is interpolated. */
 const SAMPLE_NOTES: string[] = (() => {
   const names: string[] = [];
   for (let o = 1; o <= 6; o++) for (const n of ['C', 'Ds', 'Fs', 'A']) names.push(`${n}${o}`);
@@ -34,7 +34,7 @@ export function isAudioRunning(): boolean {
   return Tone.getContext().state === 'running';
 }
 
-/** Muss in einem Klick-/Tasten-Handler aufgerufen werden. */
+/** Must be called from a click/key handler. */
 export async function unlockAudio(): Promise<void> {
   if (!isAudioRunning()) await Tone.start();
   createInstruments();
@@ -46,7 +46,7 @@ export async function ready(): Promise<void> {
   await loadPromise;
 }
 
-/* ---------- Zustand für die Oberfläche ---------- */
+/* ---------- State for the UI ---------- */
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -65,13 +65,13 @@ export function isPlaying(): boolean {
   return playing;
 }
 
-/* ---------- Wiedergabe ---------- */
+/* ---------- Playback ---------- */
 
 export interface SoundEvent {
-  /** Sekunden ab Beginn */
+  /** Seconds from start */
   time: number;
   midi: number[];
-  /** Klingdauer in Sekunden; ohne Angabe klingt der Ton wie eine gehaltene Taste aus */
+  /** Sounding duration in seconds; if omitted the note rings like a held key */
   duration?: number;
 }
 
@@ -80,7 +80,7 @@ export interface ClickEvent {
   accent: boolean;
 }
 
-/** Bricht alle Klänge und geplanten Ereignisse ab. */
+/** Stops all sounds and scheduled events. */
 export function stopAll() {
   const transport = Tone.getTransport();
   transport.stop();
@@ -95,14 +95,14 @@ export function stopAll() {
 export interface PlayOptions {
   sounds: SoundEvent[];
   clicks?: ClickEvent[];
-  /** Startposition in Sekunden (Ereignisse davor werden übersprungen) */
+  /** Start position in seconds (earlier events are skipped) */
   from?: number;
   onEnd?: () => void;
 }
 
 let endCallback: (() => void) | undefined;
 
-/** Spielt eine Folge von Klängen ab; vorherige Wiedergabe wird abgebrochen. */
+/** Plays a sequence of sounds; any previous playback is stopped. */
 export async function play(opts: PlayOptions): Promise<void> {
   stopAll();
   await unlockAudio();
@@ -113,7 +113,8 @@ export async function play(opts: PlayOptions): Promise<void> {
   for (const s of opts.sounds) {
     if (s.time < from - 1e-6) continue;
     const at = s.time - from;
-    const names = s.midi.map(midiToToneName);
+    // Frequencies in Hz, so the configured concert pitch is applied
+    const names = s.midi.map((m) => midiToFreq(m));
     transport.schedule((time) => {
       if (s.duration !== undefined) sampler!.triggerAttackRelease(names, s.duration, time, 0.8);
       else sampler!.triggerAttack(names, time, 0.8);
@@ -143,7 +144,7 @@ export async function play(opts: PlayOptions): Promise<void> {
   transport.start('+0.05');
 }
 
-/** Aktuelle Wiedergabeposition (Sekunden seit Start der Wiedergabe). */
+/** Current playback position (seconds since playback started). */
 export function transportSeconds(): number {
   return Tone.getTransport().seconds;
 }

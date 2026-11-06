@@ -1,24 +1,24 @@
 import { Pitch, PitchName, toMidi } from './pitch';
 import { transpose } from './intervals';
 
-export type ChordType = 'dur' | 'moll' | 'uberm' | 'verm';
-export type Inversion = 'grund' | 'sext' | 'quartsext';
+export type ChordType = 'major' | 'minor' | 'augmented' | 'diminished';
+export type Inversion = 'root' | 'first' | 'second';
 
 export interface ChordTypeDef {
   id: ChordType;
   short: string;
   long: string;
   key: string;
-  /** Terz und Quinte über dem Grundton: [Stufen, Halbtöne] */
+  /** Third and fifth above the root: [steps, semitones] */
   third: [number, number];
   fifth: [number, number];
 }
 
 export const CHORD_TYPES: ChordTypeDef[] = [
-  { id: 'dur', short: 'Dur', long: 'Dur', key: 'D', third: [2, 4], fifth: [4, 7] },
-  { id: 'moll', short: 'Moll', long: 'Moll', key: 'M', third: [2, 3], fifth: [4, 7] },
-  { id: 'verm', short: 'verm.', long: 'vermindert', key: 'V', third: [2, 3], fifth: [4, 6] },
-  { id: 'uberm', short: 'überm.', long: 'übermäßig', key: 'Ü', third: [2, 4], fifth: [4, 8] },
+  { id: 'major', short: 'Dur', long: 'Dur', key: 'D', third: [2, 4], fifth: [4, 7] },
+  { id: 'minor', short: 'Moll', long: 'Moll', key: 'M', third: [2, 3], fifth: [4, 7] },
+  { id: 'diminished', short: 'verm.', long: 'vermindert', key: 'V', third: [2, 3], fifth: [4, 6] },
+  { id: 'augmented', short: 'überm.', long: 'übermäßig', key: 'Ü', third: [2, 4], fifth: [4, 8] },
 ];
 
 export interface InversionDef {
@@ -28,9 +28,9 @@ export interface InversionDef {
 }
 
 export const INVERSIONS: InversionDef[] = [
-  { id: 'grund', long: 'Grundstellung', key: '1' },
-  { id: 'sext', long: 'Sextakkord', key: '2' },
-  { id: 'quartsext', long: 'Quartsextakkord', key: '3' },
+  { id: 'root', long: 'Grundstellung', key: '1' },
+  { id: 'first', long: 'Sextakkord', key: '2' },
+  { id: 'second', long: 'Quartsextakkord', key: '3' },
 ];
 
 export function chordTypeById(id: ChordType): ChordTypeDef {
@@ -41,7 +41,7 @@ export function inversionById(id: Inversion): InversionDef {
   return INVERSIONS.find((i) => i.id === id)!;
 }
 
-/** Grundton, Terz und Quinte (Oktave des Grundtons). */
+/** Root, third and fifth (in the root's octave). */
 export function chordTones(root: Pitch, type: ChordType): [Pitch, Pitch, Pitch] {
   const def = chordTypeById(type);
   return [
@@ -51,16 +51,16 @@ export function chordTones(root: Pitch, type: ChordType): [Pitch, Pitch, Pitch] 
   ];
 }
 
-/** Stimmumfänge im Chorsatz (MIDI). */
+/** Voice ranges in four-part choral writing (MIDI). */
 export const VOICE_RANGES = {
-  sopran: [60, 79], // c'–g''
-  alt: [55, 74], // g–d''
+  soprano: [60, 79], // c'–g''
+  alto: [55, 74], // g–d''
   tenor: [48, 67], // c–g'
   bass: [40, 62], // E–d'
 } as const;
 
 export interface Voicing {
-  /** Sopran, Alt, Tenor, Bass */
+  /** Soprano, alto, tenor, bass */
   notes: [Pitch, Pitch, Pitch, Pitch];
 }
 
@@ -68,7 +68,7 @@ function withOctave(p: Pitch, octave: number): Pitch {
   return { ...p, octave };
 }
 
-/** Alle Oktavlagen eines Tons innerhalb eines MIDI-Bereichs. */
+/** All octave placements of a pitch within a MIDI range. */
 function placements(p: Pitch, range: readonly [number, number]): Pitch[] {
   const out: Pitch[] = [];
   for (let o = 1; o <= 7; o++) {
@@ -80,17 +80,17 @@ function placements(p: Pitch, range: readonly [number, number]): Pitch[] {
 }
 
 /**
- * Erzeugt alle gültigen vierstimmigen Lagen eines Akkords:
- * Grundton verdoppelt, Basston gemäß Umkehrung, Oberstimmen beliebig
- * angeordnet, Stimmumfänge des Chorsatzes, keine Stimmkreuzung,
- * Abstand benachbarter Oberstimmen höchstens eine Oktave.
+ * Generates all valid four-part voicings of a chord:
+ * root doubled, bass note according to the inversion, upper voices in any
+ * order, choral voice ranges, no voice crossing, adjacent upper voices at
+ * most an octave apart.
  */
 export function allVoicings(root: Pitch, type: ChordType, inversion: Inversion): Voicing[] {
   const [r, t, f] = chordTones(root, type);
-  const bassTone = inversion === 'grund' ? r : inversion === 'sext' ? t : f;
-  // Oberstimmen: die restlichen drei Töne mit verdoppeltem Grundton
+  const bassTone = inversion === 'root' ? r : inversion === 'first' ? t : f;
+  // Upper voices: the remaining three tones with doubled root
   const upper: Pitch[] =
-    inversion === 'grund' ? [r, t, f] : inversion === 'sext' ? [r, r, f] : [r, r, t];
+    inversion === 'root' ? [r, t, f] : inversion === 'first' ? [r, r, f] : [r, r, t];
   const perms: Pitch[][] = [
     [upper[0], upper[1], upper[2]],
     [upper[0], upper[2], upper[1]],
@@ -103,8 +103,8 @@ export function allVoicings(root: Pitch, type: ChordType, inversion: Inversion):
   const seen = new Set<string>();
   for (const bass of placements(bassTone, VOICE_RANGES.bass)) {
     for (const [s0, a0, t0] of perms) {
-      for (const s of placements(s0, VOICE_RANGES.sopran)) {
-        for (const a of placements(a0, VOICE_RANGES.alt)) {
+      for (const s of placements(s0, VOICE_RANGES.soprano)) {
+        for (const a of placements(a0, VOICE_RANGES.alto)) {
           for (const te of placements(t0, VOICE_RANGES.tenor)) {
             const ms = toMidi(s);
             const ma = toMidi(a);
@@ -125,7 +125,7 @@ export function allVoicings(root: Pitch, type: ChordType, inversion: Inversion):
   return result;
 }
 
-/** Richtige Benennung von Terz und Quinte. */
+/** Correct naming of third and fifth. */
 export function chordNamingSolution(root: Pitch, type: ChordType): PitchName[] {
   const [, t, f] = chordTones(root, type);
   return [

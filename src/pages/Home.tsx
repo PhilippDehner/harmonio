@@ -1,13 +1,18 @@
-import { Link } from 'react-router-dom';
-import { unlockAudio } from '../audio/engine';
-import TileIcon, { TileIconKind } from '../components/TileIcon';
+import { Tile, Tiles } from './EarTrainingPage';
 
-const TILES: { to: string; tag: string; title: string; text: string; icon: TileIconKind }[] = [
-  { to: '/intervalle', tag: 'Stufe 1', title: 'Intervalle', text: 'Intervalle hören und bestimmen – gleichzeitig, aufwärts oder abwärts.', icon: 'interval' },
-  { to: '/akkorde', tag: 'Stufe 1', title: 'Akkorde', text: 'Dur, Moll, vermindert und übermäßig – auf Wunsch mit Umkehrung.', icon: 'chord' },
-  { to: '/diktat/einstimmig', tag: 'Stufe 2', title: 'Einstimmiges Diktat', text: 'Eine Melodie hören und notieren.', icon: 'mono' },
-  { to: '/diktat/zweistimmig', tag: 'Stufe 2', title: 'Zweistimmiges Diktat', text: 'Zwei Stimmen gleichzeitig hören und notieren.', icon: 'two' },
-  { to: '/diktat/vierstimmig', tag: 'Stufe 2', title: 'Vierstimmiger Satz', text: 'Akkordfolgen im vierstimmigen Satz notieren.', icon: 'four' },
+const AREAS: Tile[] = [
+  {
+    to: '/ear-training',
+    title: 'Gehörbildung',
+    text: 'Intervalle, Akkorde und Diktate – hören, bestimmen und aufschreiben.',
+    icon: 'ear',
+  },
+  {
+    to: '/pitch-giving',
+    title: 'Tonangabe',
+    text: 'Vierstimmigen Akkord lesen, vom Kammerton A aus die Töne finden und nachsingen – mit Mikrofon.',
+    icon: 'pitch',
+  },
 ];
 
 export default function Home() {
@@ -15,19 +20,11 @@ export default function Home() {
     <div className="stack">
       <h1>Willkommen bei Harmonio</h1>
       <p>
-        Harmonio hilft dir, dein musikalisches Gehör zu trainieren: Intervalle und Akkorde erkennen und Melodien
-        oder vierstimmige Sätze nach Gehör aufschreiben. Wähle eine Übung. Deine Einstellungen und Fortschritte werden nur in deinem Browser gespeichert.
+        Harmonio hilft dir, dein musikalisches Gehör zu trainieren: Intervalle und Akkorde erkennen, Melodien oder
+        vierstimmige Sätze nach Gehör aufschreiben und Töne für den Chor angeben. Wähle einen Bereich. Deine
+        Einstellungen und Fortschritte werden nur in deinem Browser gespeichert.
       </p>
-      <div className="tiles">
-        {TILES.map((t) => (
-          <Link key={t.to} to={t.to} className="tile" onClick={() => void unlockAudio()}>
-            <TileIcon kind={t.icon} />
-            <span className="tag">{t.tag}</span>
-            <h2>{t.title}</h2>
-            <p>{t.text}</p>
-          </Link>
-        ))}
-      </div>
+      <Tiles tiles={AREAS} />
     </div>
   );
 }

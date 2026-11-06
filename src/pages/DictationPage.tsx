@@ -24,13 +24,13 @@ import {
 } from '../storage/store';
 
 const MODE_LABELS: Record<InputMode, string> = {
-  papier: 'Papier',
-  klaviatur: 'Klaviatur',
-  notenblatt: 'Notenblatt',
+  paper: 'Papier',
+  keyboard: 'Klaviatur',
+  score: 'Notenblatt',
 };
 
 function evaluate(d: Dictation, input: DNote[][]): VoiceResult[] {
-  if (d.kind === 'vierstimmig') return evaluateChorale(d.voices, input);
+  if (d.kind === 'four-part') return evaluateChorale(d.voices, input);
   return d.voices.map((sol, i) => evaluateVoice(sol, input[i] ?? []));
 }
 
@@ -59,7 +59,7 @@ function formatTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
-/** Neu einhängen bei jedem Diktatwechsel, damit kein Zustand übernommen wird. */
+/** Remount on every dictation change so that no state carries over. */
 export default function DictationRoute() {
   const { kind, id } = useParams();
   return <DictationPage key={`${kind}-${id}`} />;
@@ -67,7 +67,7 @@ export default function DictationRoute() {
 
 function DictationPage() {
   const { kind: kindParam, id: numParam } = useParams();
-  const kind = (KINDS.includes(kindParam as DictationKind) ? kindParam : 'einstimmig') as DictationKind;
+  const kind = (KINDS.includes(kindParam as DictationKind) ? kindParam : 'monophonic') as DictationKind;
   const dictationId = `${kind}-${numParam}`;
   const navigate = useNavigate();
   const data = useAppData();
@@ -88,14 +88,14 @@ function DictationPage() {
   const [playing, setPlaying] = useState(isPlaying());
   const playRef = useRef<{ from: number; offset: number } | null>(null);
 
-  const tour = useTour('diktat', [
+  const tour = useTour('dictation', [
     { title: 'Diktat', text: 'Höre die Melodie und notiere sie. Taktart, Tonart (Vorzeichen) und Anfangstöne sind vorgegeben.' },
     { selector: '#dk-mode', title: 'Eingabe', text: 'Schreibe auf Papier und kontrolliere selbst, oder gib die Noten über Klaviatur oder Notenblatt ein.' },
     { selector: '#dk-play', title: 'Abspielen', text: 'Beim ersten Abspielen erklingen Kadenz und Einzählen. Danach spielst du ab der gewählten Stelle (Leertaste: Abspielen und Stopp).' },
     { selector: '#dk-check', title: 'Prüfen', text: 'Am Ende wird ausgewertet: Fehler, Folgefehler und Rhythmusfehler werden farbig markiert.' },
   ]);
 
-  // Laden
+  // Load
   useEffect(() => {
     let cancelled = false;
     setD(null);
@@ -135,7 +135,7 @@ function DictationPage() {
     const p = getState().dictations.progress[dictationId];
     if (p && d) {
       setInputState(p.input.length ? p.input : initialInput(d));
-      if (p.mode === 'papier') setPaperPos(p.position);
+      if (p.mode === 'paper') setPaperPos(p.position);
       else setMeasure(Math.min(p.position, d.measures.length - 1));
       setIntroPlayed(p.introPlayed);
       setTouched(true);
@@ -144,7 +144,7 @@ function DictationPage() {
     setAskResume(false);
   }
 
-  // Zwischenstand speichern
+  // Save progress
   useEffect(() => {
     if (!d || !touched || checked) return;
     saveProgress({
@@ -152,12 +152,12 @@ function DictationPage() {
       updated: Date.now(),
       mode,
       input,
-      position: mode === 'papier' ? paperPos : measure,
+      position: mode === 'paper' ? paperPos : measure,
       introPlayed,
     });
   }, [d, touched, checked, input, measure, paperPos, introPlayed, mode, dictationId]);
 
-  // Fortschritt der Wiedergabe (Zeitleiste im Papier-Modus)
+  // Playback progress (timeline in paper mode)
   useEffect(() => {
     if (!playing || !d) return;
     let raf = 0;
@@ -165,7 +165,7 @@ function DictationPage() {
       const ref = playRef.current;
       if (ref) {
         const pos = ref.from + Math.max(0, transportSeconds() - ref.offset);
-        if (mode === 'papier') setPaperPos(Math.min(pos, melodySeconds(d)));
+        if (mode === 'paper') setPaperPos(Math.min(pos, melodySeconds(d)));
       }
       raf = requestAnimationFrame(tick);
     };
@@ -194,9 +194,9 @@ function DictationPage() {
       setTouched(true);
       return;
     }
-    const fromTick = mode === 'papier' ? 0 : d.measures[measure].start;
-    let fromSec = mode === 'papier' ? paperPos : fromTick * spt;
-    if (mode === 'papier' && fromSec >= melodySeconds(d) - 0.05) fromSec = 0;
+    const fromTick = mode === 'paper' ? 0 : d.measures[measure].start;
+    let fromSec = mode === 'paper' ? paperPos : fromTick * spt;
+    if (mode === 'paper' && fromSec >= melodySeconds(d) - 0.05) fromSec = 0;
     playRef.current = { from: fromSec, offset: 0.05 };
     void play({ sounds: voiceSounds(d.voices, d.tempo, 0), from: fromSec });
   }, [d, introPlayed, mode, measure, paperPos]);
@@ -213,7 +213,7 @@ function DictationPage() {
     if (!d) return;
     stopAll();
     setConfirmCheck(false);
-    if (mode === 'papier') {
+    if (mode === 'paper') {
       addAttempt({
         id: newId('a'),
         dictationId,
@@ -252,7 +252,7 @@ function DictationPage() {
     } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey) {
       e.preventDefault();
       const dir = e.key === 'ArrowLeft' ? -1 : 1;
-      if (mode === 'papier') {
+      if (mode === 'paper') {
         stopAll();
         setPaperPos((p) => Math.max(0, Math.min(melodySeconds(d), p + dir * 5)));
       } else setMeasure((m) => Math.max(0, Math.min(d.measures.length - 1, m + dir)));
@@ -264,7 +264,7 @@ function DictationPage() {
     const done = new Set(getState().dictations.attempts.map((a) => a.dictationId));
     done.add(dictationId);
     const e = pickRandom(kind, done);
-    if (e) navigate(`/diktat/${kind}/${e.number}`);
+    if (e) navigate(`/dictation/${kind}/${e.number}`);
   };
 
   const evaluation = useMemo(() => {
@@ -278,7 +278,7 @@ function DictationPage() {
   if (!d) return <p>Lade Diktat …</p>;
 
   const staves = staffDefs(d);
-  const chorale = d.kind === 'vierstimmig';
+  const chorale = d.kind === 'four-part';
   const startNotes = d.voices.map((v) => sortNotes(v)[0]).filter(Boolean);
   const locked = checked !== null || viewAttempt !== null;
   const summary = evaluation ? summarize(evaluation.results) : null;
@@ -290,7 +290,7 @@ function DictationPage() {
           {KIND_LABELS[d.kind]} {d.number}
         </h1>
         <span className="spacer" />
-        <Link className="btn" to={`/diktat/${kind}`}>
+        <Link className="btn" to={`/dictation/${kind}`}>
           Liste
         </Link>
         <button onClick={tour.start} aria-label="Hilfe: Tour starten">
@@ -333,7 +333,7 @@ function DictationPage() {
         <button id="dk-play" className="primary" onClick={startPlayback}>
           {playing ? '■ Stopp' : '▶ Abspielen'} <kbd className="hint">Leertaste</kbd>
         </button>
-        {mode !== 'papier' && (
+        {mode !== 'paper' && (
           <button onClick={playOwnInput} disabled={playing}>
             Eigene Eingabe anhören
           </button>
@@ -341,7 +341,7 @@ function DictationPage() {
         {!introPlayed && <span className="muted small">Beim ersten Abspielen: Kadenz und Einzählen</span>}
       </div>
 
-      {mode === 'papier' && (
+      {mode === 'paper' && (
         <div className="card timeline">
           <label className="small" htmlFor="dk-timeline">
             Position: {formatTime(paperPos)} / {formatTime(melodySeconds(d))}{' '}
@@ -378,7 +378,7 @@ function DictationPage() {
         </div>
       )}
 
-      {mode !== 'papier' && !locked && (
+      {mode !== 'paper' && !locked && (
         <>
           <p className="hint-landscape muted small">Tipp: Im Querformat ist die Eingabe bequemer.</p>
           <DictationEditor d={d} input={input} setInput={setInput} mode={mode} measure={measure} setMeasure={setMeasure} />
@@ -406,7 +406,7 @@ function DictationPage() {
 
       {!locked && (
         <div className="row" id="dk-check">
-          {mode === 'papier' ? (
+          {mode === 'paper' ? (
             <button className="primary" onClick={doCheck}>
               Lösung anzeigen
             </button>
@@ -479,7 +479,7 @@ function DictationPage() {
               Erneut von vorne
             </button>
             <button onClick={nextRandom}>Nächstes zufälliges Diktat</button>
-            <Link className="btn" to={`/diktat/${kind}`}>
+            <Link className="btn" to={`/dictation/${kind}`}>
               Zur Liste
             </Link>
           </div>

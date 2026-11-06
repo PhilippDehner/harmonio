@@ -16,13 +16,13 @@ interface Props {
   prompt: React.ReactNode;
   slots: string[];
   onSubmit: (answers: PitchName[]) => void;
-  /** Nach der Prüfung: richtig? und Lösungstext */
+  /** After checking: correct? and solution text */
   result: { correct: boolean; solution: string } | null;
 }
 
 /**
- * Eingabe von Tonnamen in zwei Schritten: erst Stammton, dann Vorzeichen.
- * Mehrere Töne (Akkord) werden erst alle eingegeben und dann gemeinsam geprüft.
+ * Entering note names in two steps: first the step, then the accidental.
+ * Multiple notes (chord) are all entered first and then checked together.
  */
 export default function NoteNamer({ prompt, slots, onSubmit, result }: Props) {
   const [answers, setAnswers] = useState<(PitchName | null)[]>(slots.map(() => null));

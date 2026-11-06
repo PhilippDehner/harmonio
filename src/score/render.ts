@@ -19,7 +19,7 @@ export type Clef = 'treble' | 'bass';
 
 export interface StaffDef {
   clef: Clef;
-  /** Indizes der Stimmen auf diesem System (mehrere = Akkord) */
+  /** Indices of the voices on this staff (several = chord) */
   voices: number[];
 }
 
@@ -39,7 +39,7 @@ export interface RenderInput {
   voices: DNote[][];
   fromMeasure: number;
   toMeasure: number;
-  /** Breite in Bildschirmpixeln */
+  /** Width in screen pixels */
   width: number;
   scale: number;
   noteStyles?: Record<string, NoteStyle>;
@@ -47,16 +47,16 @@ export interface RenderInput {
   activeStaff?: number;
   cursor?: { staff: number; tick: number } | null;
   highlightMeasure?: number | null;
-  /** Auch die letzte Zeile auf volle Breite strecken */
+  /** Stretch the last line to full width too */
   fill?: boolean;
-  /** Feste Breite pro Takt-Einheit (proportional zur Dauer) */
+  /** Fixed width per measure unit (proportional to duration) */
   pxPerQuarter?: number;
-  /** Lücken (auch leere Takte) mit Pausen füllen */
+  /** Fill gaps (including empty measures) with rests */
   fillRests?: boolean;
 }
 
 export interface StaffLayout {
-  /** y der obersten Notenlinie (Bildschirmpixel) */
+  /** y of the top staff line (screen pixels) */
   topLine: number;
   lineSpacing: number;
   clef: Clef;
@@ -66,7 +66,7 @@ export interface StaffLayout {
 
 export interface MeasureLayout {
   index: number;
-  /** Notenbereich (Bildschirmpixel) */
+  /** Note area (screen pixels) */
   x0: number;
   x1: number;
   left: number;
@@ -88,18 +88,18 @@ function vexDuration(d: Duration, rest = false): string {
   return d.base + (rest ? 'r' : '');
 }
 
-/** Lage der Pause im System (Ganze hängt an der 4. Linie). */
+/** Position of the rest on the staff (whole rest hangs from the 4th line). */
 function restKey(clef: Clef, d: Duration): string {
   if (clef === 'treble') return d.base === 'w' ? 'd/5' : 'b/4';
   return d.base === 'w' ? 'f/3' : 'd/3';
 }
 
-/** Diatonischer Index der obersten Linie */
+/** Diatonic index of the top line */
 function topLineIndex(clef: Clef): number {
   return clef === 'treble' ? diatonicIndex({ step: 3, octave: 5 }) : diatonicIndex({ step: 5, octave: 3 });
 }
 
-/** Tonhöhe (ohne Vorzeichen) aus y-Koordinate. */
+/** Pitch (without accidental) from y coordinate. */
 export function pitchFromY(staff: StaffLayout, y: number): Pitch {
   const halfSteps = Math.round((y - staff.topLine) / (staff.lineSpacing / 2));
   return fromDiatonicIndex(topLineIndex(staff.clef) - halfSteps, 0);
@@ -109,14 +109,65 @@ function headerWidth(keyFifths: number, withTime: boolean) {
   return 40 + Math.abs(keyFifths) * 10 + (withTime ? 30 : 0);
 }
 
+/** Notes of a staff in a measure, grouped by onset (chords), each group sorted by pitch. */
+function staffGroups(input: RenderInput, staffDef: StaffDef, m: Measure) {
+  const notes = staffDef.voices
+    .flatMap((v) => input.voices[v] ?? [])
+    .filter((n) => n.start >= m.start && n.start < m.start + m.ticks);
+  const groups = new Map<number, DNote[]>();
+  for (const n of notes) {
+    const g = groups.get(n.start) ?? [];
+    g.push(n);
+    groups.set(n.start, g);
+  }
+  const starts = Array.from(groups.keys()).sort((a, b) => a - b);
+  starts.forEach((s) => groups.get(s)!.sort((a, b) => toMidi(a.pitch) - toMidi(b.pitch)));
+  const accs = accidentalsInMeasure(
+    starts.flatMap((s) => groups.get(s)!.map((n) => n.pitch)),
+    input.keyFifths,
+  );
+  const accMap = new Map<string, string | null>();
+  starts.flatMap((s) => groups.get(s)!).forEach((n, i) => accMap.set(n.id, accs[i]));
+  return { notes, groups, starts, accMap };
+}
+
+/** Space needed left of the first note in a measure (accidentals of the first chord). */
+function leadingModifierWidth(input: RenderInput, m: Measure): number {
+  let max = 0;
+  for (const staffDef of input.staves) {
+    const { groups, starts, accMap } = staffGroups(input, staffDef, m);
+    const first = starts[0];
+    if (first === undefined || first !== m.start) continue;
+    const g = groups.get(first)!;
+    if (!g.some((n) => accMap.get(n.id))) continue;
+    try {
+      const sn = new StaveNote({ keys: g.map((n) => vexKey(n.pitch)), duration: vexDuration(g[0].dur), clef: staffDef.clef });
+      g.forEach((n, i) => {
+        const a = accMap.get(n.id);
+        if (a) sn.addModifier(new Accidental(a), i);
+      });
+      sn.setStave(new Stave(0, 0, 100));
+      const mc = new ModifierContext();
+      sn.addToModifierContext(mc);
+      const tc = new TickContext();
+      tc.addTickable(sn);
+      tc.preFormat();
+      max = Math.max(max, sn.getMetrics().modLeftPx);
+    } catch {
+      /* ignore */
+    }
+  }
+  return max;
+}
+
 function getCssColor(el: HTMLElement, name: string, fallback: string) {
   const v = getComputedStyle(el).getPropertyValue(name).trim();
   return v || fallback;
 }
 
 /**
- * Zeichnet Takte proportional zur Dauer: Die x-Position einer Note entspricht
- * ihrem Einsatz im Takt. So lassen sich Klicks direkt Zeitpunkten zuordnen.
+ * Draws measures proportionally to duration: the x position of a note
+ * corresponds to its onset in the measure, so clicks map directly to times.
  */
 export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
   el.innerHTML = '';
@@ -132,7 +183,14 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
   const keySpec = keySignatureName(input.keyFifths);
   const timeSpec = `${input.beats}/${input.beatType}`;
 
-  // Systeme (Zeilen) bilden
+  // Extra space for accidentals before the first note (beyond the default 12px)
+  const leadCache = new Map<number, number>();
+  const leadExtra = (m: Measure) => {
+    if (!leadCache.has(m.start)) leadCache.set(m.start, Math.max(0, leadingModifierWidth(input, m) + 4 - 12));
+    return leadCache.get(m.start)!;
+  };
+
+  // Build systems (lines)
   type Sys = { measures: { index: number; width: number }[] };
   const systems: Sys[] = [];
   let cur: Sys = { measures: [] };
@@ -141,7 +199,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
     const m = input.measures[idx];
     const first = cur.measures.length === 0;
     const header = first ? headerWidth(input.keyFifths, input.showTime && systems.length === 0) : 0;
-    const w = Math.max(70, (m.ticks / 24) * pxq) + 30 + header;
+    const w = Math.max(70, (m.ticks / 24) * pxq) + 30 + header + leadExtra(m);
     if (!first && used + w > logicalWidth - 4) {
       systems.push(cur);
       cur = { measures: [] };
@@ -168,7 +226,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
   const layout: ScoreLayout = { measures: [], height: height * scale, notes: [] };
 
   systems.forEach((sys, sIndex) => {
-    // Takte auf volle Breite strecken (außer bei sehr kurzer letzter Zeile)
+    // Stretch measures to full width (except for a very short last line)
     const total = sys.measures.reduce((a, b) => a + b.width, 0);
     const isLast = sIndex === systems.length - 1;
     const stretch = input.fill || !isLast || total > logicalWidth * 0.6 ? (logicalWidth - 2) / total : 1;
@@ -211,7 +269,8 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
           ctx.restore();
         }
 
-        const noteStart = stave.getNoteStartX() + 12;
+        const pad = stave.getNoteStartX() + 12;
+        const noteStart = pad + leadExtra(m);
         const noteEnd = x + w - 14;
         ml.x0 = noteStart * scale;
         ml.x1 = noteEnd * scale;
@@ -226,26 +285,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
 
         const xForTick = (tick: number) => noteStart + ((tick - m.start) / m.ticks) * (noteEnd - noteStart);
 
-        // Noten dieses Systems im Takt, nach Einsatz gruppiert (Akkorde)
-        const notes = staffDef.voices
-          .flatMap((v) => input.voices[v] ?? [])
-          .filter((n) => n.start >= m.start && n.start < m.start + m.ticks);
-        const groups = new Map<number, DNote[]>();
-        for (const n of notes) {
-          const g = groups.get(n.start) ?? [];
-          g.push(n);
-          groups.set(n.start, g);
-        }
-        const starts = Array.from(groups.keys()).sort((a, b) => a - b);
-        // Versetzungszeichen
-        const seq: { note: DNote }[] = [];
-        starts.forEach((s) => {
-          const g = groups.get(s)!.sort((a, b) => toMidi(a.pitch) - toMidi(b.pitch));
-          g.forEach((n) => seq.push({ note: n }));
-        });
-        const accs = accidentalsInMeasure(seq.map((q) => q.note.pitch), input.keyFifths);
-        const accMap = new Map<string, string | null>();
-        seq.forEach((q, i) => accMap.set(q.note.id, accs[i]));
+        const { notes, groups, starts, accMap } = staffGroups(input, staffDef, m);
 
         type Item = { start: number; dur: Duration; group?: DNote[]; wholeMeasure?: boolean };
         const items: Item[] = starts.map((s) => ({ start: s, dur: groups.get(s)![0].dur, group: groups.get(s)! }));
@@ -289,7 +329,6 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
               const tc = new TickContext();
               tc.addTickable(sn);
               tc.preFormat();
-              const pad = stave.getNoteStartX() + 12;
               const rx = item.wholeMeasure ? (noteStart + noteEnd) / 2 - 6 : xForTick(s);
               tc.setX(rx - pad);
               sn.setContext(ctx);
@@ -322,7 +361,6 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
             const tc = new TickContext();
             tc.addTickable(sn);
             tc.preFormat();
-            const pad = stave.getNoteStartX() + 12;
             tc.setX(xForTick(s) - pad);
             sn.setContext(ctx);
             vfNotes.push(sn);
@@ -343,7 +381,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
           try {
             tuplets.push(new Tuplet(r, { num_notes: 3, notes_occupied: 2, bracketed: true }));
           } catch {
-            /* ignorieren */
+            /* ignore */
           }
         }
         let beams: Beam[] = [];
@@ -365,18 +403,18 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
           try {
             b.setContext(ctx).draw();
           } catch {
-            /* ignorieren */
+            /* ignore */
           }
         }
         for (const t of tuplets) {
           try {
             t.setContext(ctx).draw();
           } catch {
-            /* ignorieren */
+            /* ignore */
           }
         }
 
-        // Eingabeposition
+        // Insert position
         if (input.cursor && input.cursor.staff === sIdx && input.cursor.tick >= m.start && input.cursor.tick < m.start + m.ticks) {
           const cx = xForTick(input.cursor.tick);
           ctx.save();
@@ -392,7 +430,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
           new StaveConnector(top, bottom).setType('brace').setContext(ctx).draw();
           new StaveConnector(top, bottom).setType('singleLeft').setContext(ctx).draw();
         } catch {
-          /* ignorieren */
+          /* ignore */
         }
       }
       x += w;
@@ -403,7 +441,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
   return layout;
 }
 
-/** VexFlow-Tonartbezeichnung aus Quintenzirkel-Position. */
+/** VexFlow key name from circle-of-fifths position. */
 export function keySignatureName(fifths: number): string | null {
   const sharps = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'];
   const flats = ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'];
@@ -411,7 +449,7 @@ export function keySignatureName(fifths: number): string | null {
   return fifths > 0 ? sharps[fifths] : flats[-fifths];
 }
 
-/** Ordnet einen Klick einem Takt, System, Zeitpunkt und einer Tonhöhe zu. */
+/** Maps a click to a measure, staff, time and pitch. */
 export function hitTest(
   layout: ScoreLayout,
   measures: Measure[],
