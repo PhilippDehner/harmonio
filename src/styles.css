@@ -1024,12 +1024,12 @@ button.primary kbd.hint {
   }
 }
 
-/* Not enough room for three buttons: a single button that cycles */
+/* Narrow screens: a single button that cycles, keeps the header uncluttered */
 .theme-cycle {
   display: none;
 }
 
-@media (max-width: 339px) {
+@media (max-width: 399px) {
   .theme-switch {
     display: none;
   }
