@@ -1023,3 +1023,21 @@ button.primary kbd.hint {
     padding: 4px 6px;
   }
 }
+
+/* Not enough room for three buttons: a single button that cycles */
+.theme-cycle {
+  display: none;
+}
+
+@media (max-width: 339px) {
+  .theme-switch {
+    display: none;
+  }
+  .theme-cycle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 4px 6px;
+  }
+}

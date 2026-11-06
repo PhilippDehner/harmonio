@@ -47,14 +47,28 @@ const THEME_OPTIONS: [ThemeSetting, string, () => React.JSX.Element][] = [
 
 function ThemeToggle() {
   const { theme } = useSettings();
+  const idx = THEME_OPTIONS.findIndex(([t]) => t === theme);
+  const [, currentLabel, CurrentIcon] = THEME_OPTIONS[idx];
+  const [next, nextLabel] = THEME_OPTIONS[(idx + 1) % THEME_OPTIONS.length];
   return (
-    <div className="segmented theme-switch" role="group" aria-label="Farbschema">
-      {THEME_OPTIONS.map(([t, label, Icon]) => (
-        <button key={t} aria-pressed={theme === t} aria-label={label} title={label} onClick={() => updateSettings({ theme: t })}>
-          <Icon />
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="segmented theme-switch" role="group" aria-label="Farbschema">
+        {THEME_OPTIONS.map(([t, label, Icon]) => (
+          <button key={t} aria-pressed={theme === t} aria-label={label} title={label} onClick={() => updateSettings({ theme: t })}>
+            <Icon />
+          </button>
+        ))}
+      </div>
+      {/* Bei wenig Platz: ein Button, der durch die Modi wechselt */}
+      <button
+        className="ghost theme-cycle"
+        aria-label={`${currentLabel} – wechseln zu: ${nextLabel}`}
+        title={`${currentLabel} (wechseln zu: ${nextLabel})`}
+        onClick={() => updateSettings({ theme: next })}
+      >
+        <CurrentIcon />
+      </button>
+    </>
   );
 }
 
