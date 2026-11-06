@@ -138,7 +138,7 @@ export default function SettingsPage() {
               if (e.target.value !== '' && v >= 1 && v <= 30) updateSettings({ autoNextSeconds: v });
             }}
             onBlur={() => setSecondsDraft(null)}
-            style={{ width: '4.5em' }}
+            style={{ width: '4em' }}
           />
           Sekunden
         </label>
