@@ -45,6 +45,10 @@ Unterstützter Umfang: ganze, halbe, Viertel- und Achtelnoten, jeweils punktiert
 
 Die mitgelieferten Diktate sind einfache Beispiele zum Testen.
 
+## Neue Version
+
+Version in `package.json` erhöhen und oben in `src/changelog.ts` einen Eintrag mit den Änderungen (auf Deutsch) ergänzen. Nutzer sehen die Neuigkeiten beim nächsten Öffnen; über „Neuigkeiten“ im Fußbereich ist der ganze Verlauf abrufbar.
+
 ## Deployment
 
 GitHub Actions führt bei jedem Push Typprüfung, Tests und Build aus. Bei Pushes auf `main` wird nach bestandenen Tests auf GitHub Pages veröffentlicht. Dazu einmalig in den Repository-Einstellungen unter *Pages* als Quelle „GitHub Actions“ wählen.
