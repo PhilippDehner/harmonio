@@ -1011,3 +1011,15 @@ button.primary kbd.hint {
   align-items: center;
   justify-content: center;
 }
+
+@media (max-width: 640px) {
+  .site-header {
+    gap: 8px;
+  }
+  .site-header nav a {
+    padding: 6px 6px;
+  }
+  .theme-switch button {
+    padding: 4px 6px;
+  }
+}
