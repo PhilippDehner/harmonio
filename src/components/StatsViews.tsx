@@ -21,7 +21,7 @@ export function LiveStats({ correct, wrong }: { correct: number; wrong: number }
   );
 }
 
-/** Tabelle: Werte pro Intervall/Akkord und häufige Verwechslungen. */
+/** Table: values per interval/chord and frequent confusions. */
 export function DetailTable({
   bucket,
   items,

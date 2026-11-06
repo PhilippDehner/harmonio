@@ -25,7 +25,7 @@ type Phase = 'answer' | 'naming' | 'done';
 function allAnswerIds(level: 1 | 2): string[] {
   const ids: string[] = [];
   for (const t of CHORD_TYPES) {
-    if (level === 1 || t.id === 'uberm') ids.push(chordAnswerId(t.id, null));
+    if (level === 1 || t.id === 'augmented') ids.push(chordAnswerId(t.id, null));
     else for (const inv of INVERSIONS) ids.push(chordAnswerId(t.id, inv.id));
   }
   return ids;
@@ -40,13 +40,13 @@ function newTask(level: 1 | 2, adaptive: boolean): ChordTask {
   const s = aggregateStats(getState().stats);
   const id = chooseAdaptive(allAnswerIds(level), s.chords[String(level)] ?? {}, adaptive);
   const { type, inversion } = parseAnswerId(id);
-  const inv: Inversion = inversion ?? (['grund', 'sext', 'quartsext'] as Inversion[])[Math.floor(Math.random() * 3)];
-  return makeChordTask(type, type === 'uberm' && level === 2 ? 'grund' : inv);
+  const inv: Inversion = inversion ?? (['root', 'first', 'second'] as Inversion[])[Math.floor(Math.random() * 3)];
+  return makeChordTask(type, type === 'augmented' && level === 2 ? 'root' : inv);
 }
 
 function InversionLabel({ id }: { id: Inversion }) {
-  if (id === 'grund') return <span>Grundst.</span>;
-  if (id === 'sext') return <span>6</span>;
+  if (id === 'root') return <span>Grundst.</span>;
+  if (id === 'first') return <span>6</span>;
   return (
     <span className="figured" aria-hidden="true">
       <span>6</span>
@@ -67,7 +67,7 @@ export default function ChordsPage() {
   const [session, setSession] = useState({ correct: 0, wrong: 0 });
   const timer = useRef<number | null>(null);
 
-  const tour = useTour('akkorde', [
+  const tour = useTour('chords', [
     { title: 'Akkorde', text: 'Hier hörst du zufällige vierstimmige Akkorde und bestimmst den Akkordtyp.' },
     { selector: '#ch-level', title: 'Stufe', text: 'In der zweiten Stufe bestimmst du zusätzlich die Umkehrung. Dafür zählt nur der Basston.' },
     { selector: '#ch-play', title: 'Abspielen', text: 'Spiele den Akkord beliebig oft ab (Leertaste).' },
@@ -107,15 +107,15 @@ export default function ChordsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const needsInversion = (type: ChordType | null) => level === 2 && type !== null && type !== 'uberm';
+  const needsInversion = (type: ChordType | null) => level === 2 && type !== null && type !== 'augmented';
 
   function evaluate(type: ChordType, inversion: Inversion | null) {
-    // Ausstehende automatische Wiedergabe abbrechen, sonst überdeckt sie später „Deine Antwort“.
+    // Cancel pending automatic playback, otherwise it would later drown out "Deine Antwort".
     if (timer.current) window.clearTimeout(timer.current);
     stopAll();
-    const checkInv = level === 2 && task.type !== 'uberm';
+    const checkInv = level === 2 && task.type !== 'augmented';
     const correctId = chordAnswerId(task.type, checkInv ? task.inversion : null);
-    const givenId = chordAnswerId(type, level === 2 && type !== 'uberm' ? inversion : null);
+    const givenId = chordAnswerId(type, level === 2 && type !== 'augmented' ? inversion : null);
     const correct = correctId === givenId;
     recordChord(String(level), correctId, correct, correct ? undefined : givenId);
     setSession((s) => ({ correct: s.correct + (correct ? 1 : 0), wrong: s.wrong + (correct ? 0 : 1) }));
@@ -130,7 +130,7 @@ export default function ChordsPage() {
   }
 
   function chooseInversion(inv: Inversion) {
-    if (phase !== 'answer' || !needsInversion(typeAnswer ?? 'dur')) return;
+    if (phase !== 'answer' || !needsInversion(typeAnswer ?? 'major')) return;
     setInvAnswer(inv);
     if (typeAnswer) evaluate(typeAnswer, inv);
   }
@@ -148,7 +148,7 @@ export default function ChordsPage() {
     }
     if (phase !== 'answer') return;
     const k = key.toUpperCase();
-    const type = CHORD_TYPES.find((t) => t.key === k || (t.id === 'uberm' && k === 'U'));
+    const type = CHORD_TYPES.find((t) => t.key === k || (t.id === 'augmented' && k === 'U'));
     if (type) {
       e.preventDefault();
       chooseType(type.id);
@@ -161,15 +161,15 @@ export default function ChordsPage() {
     }
   });
 
-  const checkInv = level === 2 && task.type !== 'uberm';
+  const checkInv = level === 2 && task.type !== 'augmented';
   const isCorrect =
     phase !== 'answer' &&
     typeAnswer === task.type &&
     (!checkInv || invAnswer === task.inversion);
   const autoNextIn = useAutoNext(phase === 'done', isCorrect && (!namingResult || namingResult.correct), next);
   const solutionLabel = chordAnswerLabel(task.type, checkInv ? task.inversion : null);
-  const givenLabel = typeAnswer ? chordAnswerLabel(typeAnswer, level === 2 && typeAnswer !== 'uberm' ? invAnswer : null) : '';
-  const givenInv = level === 2 && typeAnswer !== 'uberm' && invAnswer ? invAnswer : task.inversion;
+  const givenInv = level === 2 && typeAnswer !== 'augmented' && invAnswer ? invAnswer : task.inversion;
+  const givenLabel = typeAnswer ? chordAnswerLabel(typeAnswer, level === 2 && typeAnswer !== 'augmented' ? invAnswer : null) : '';
   const playGiven = () => {
     if (!typeAnswer) return;
     stopAll();
@@ -256,7 +256,7 @@ export default function ChordsPage() {
       {level === 2 && (
         <div className="answer-grid inversions" role="group" aria-label="Umkehrung">
           {INVERSIONS.map((inv) => {
-            const disabledByType = typeAnswer === 'uberm' || (phase !== 'answer' && task.type === 'uberm');
+            const disabledByType = typeAnswer === 'augmented' || (phase !== 'answer' && task.type === 'augmented');
             let cls = invAnswer === inv.id ? 'selected' : '';
             if (phase !== 'answer' && checkInv) {
               if (inv.id === task.inversion) cls = 'correct';

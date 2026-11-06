@@ -12,10 +12,10 @@ interface Props {
 const WHITE_W = 40;
 const BLACK_W = 26;
 
-/** Bildschirm-Klaviatur; schwarze Tasten werden passend zur Tonart benannt. */
+/** On-screen keyboard; black keys are named according to the key signature. */
 export default function Piano({ low, high, keyFifths, onKey, disabled }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
-  // Bereich auf weiße Tasten erweitern
+  // Extend the range to white keys
   let lo = low;
   while (isBlackKey(lo)) lo--;
   let hi = high;
@@ -30,7 +30,7 @@ export default function Piano({ low, high, keyFifths, onKey, disabled }: Props) 
     }
   }
 
-  // Mitte (eingestrichenes c) sichtbar machen
+  // Scroll middle C (c') into view
   useEffect(() => {
     const el = wrap.current;
     if (!el) return;

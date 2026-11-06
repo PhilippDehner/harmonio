@@ -1,4 +1,4 @@
-name: Tests und Deployment
+name: Tests and deployment
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
         with:
           path: dist
 
-  # Deployment nur vom main-Branch und nur bei bestandenen Tests
+  # Deploy only from the main branch and only if the tests pass
   deploy:
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

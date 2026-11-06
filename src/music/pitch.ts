@@ -1,8 +1,8 @@
 /**
- * Tonhöhen mit enharmonisch korrekter Schreibweise.
- * step: 0=C, 1=D, 2=E, 3=F, 4=G, 5=A, 6=H
- * alter: -2 (Doppel-B) … +2 (Doppelkreuz)
- * octave: wissenschaftliche Oktavzählung (C4 = eingestrichenes c)
+ * Pitches with enharmonically correct spelling.
+ * step: 0=C, 1=D, 2=E, 3=F, 4=G, 5=A, 6=B (German: H)
+ * alter: -2 (double flat) … +2 (double sharp)
+ * octave: scientific octave numbering (C4 = middle C)
  */
 export interface Pitch {
   step: number;
@@ -10,14 +10,15 @@ export interface Pitch {
   octave: number;
 }
 
-/** Tonhöhenklasse ohne Oktave (für Tonbenennung). */
+/** Pitch class without octave (for note naming). */
 export interface PitchName {
   step: number;
   alter: number;
 }
 
+/** German letters (for display). */
 export const STEP_LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'H'] as const;
-/** Englische Buchstaben (für MusicXML und VexFlow). */
+/** English letters (for MusicXML and VexFlow). */
 export const STEP_LETTERS_EN = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const;
 export const STEP_SEMITONES = [0, 2, 4, 5, 7, 9, 11] as const;
 
@@ -29,7 +30,7 @@ export function toMidi(p: Pitch): number {
   return (p.octave + 1) * 12 + STEP_SEMITONES[p.step] + p.alter;
 }
 
-/** Diatonischer Index (Stammtonstufen ab C0). */
+/** Diatonic index (staff steps from C0). */
 export function diatonicIndex(p: { step: number; octave: number }): number {
   return p.octave * 7 + p.step;
 }
@@ -46,7 +47,7 @@ export function sameName(a: PitchName, b: PitchName): boolean {
   return a.step === b.step && a.alter === b.alter;
 }
 
-/** Deutscher Notenname, z. B. „Cis“, „Es“, „B“, „Heses“, „Fisis“. */
+/** German note name, e.g. "Cis", "Es", "B", "Heses", "Fisis". */
 export function germanName(p: PitchName, lowercase = false): string {
   const { step, alter } = p;
   let name: string;
@@ -60,13 +61,13 @@ export function germanName(p: PitchName, lowercase = false): string {
 }
 
 /**
- * Deutscher Name mit Oktavbezeichnung (Helmholtz), z. B. c', g, C, c'''.
+ * German name with octave designation (Helmholtz), e.g. c', g, C, c'''.
  */
 export function germanNameWithOctave(p: Pitch): string {
   const base = germanName(p, true);
   if (p.octave >= 3) return base + "'".repeat(p.octave - 3);
   if (p.octave === 2) return base.charAt(0).toUpperCase() + base.slice(1);
-  // Kontra-Oktave und tiefer
+  // Contra octave and below
   const upper = base.charAt(0).toUpperCase() + base.slice(1);
   return upper + ','.repeat(2 - p.octave);
 }
@@ -79,14 +80,14 @@ export const ACCIDENTAL_SYMBOLS: Record<number, string> = {
   2: '𝄪',
 };
 
-/** Schreibweisen einer schwarzen/weißen Taste mit höchstens einem Vorzeichen. */
+/** Spellings of a black/white key with at most one accidental. */
 export function simpleSpellings(midi: number): Pitch[] {
   const pc = mod(midi, 12);
   const result: Pitch[] = [];
   for (let step = 0; step < 7; step++) {
     for (const alter of [-1, 0, 1]) {
       if (mod(STEP_SEMITONES[step] + alter, 12) === pc) {
-        // Oktave so wählen, dass die MIDI-Nummer stimmt
+        // Choose the octave so that the MIDI number matches
         const base = STEP_SEMITONES[step] + alter;
         const octave = Math.floor((midi - base) / 12) - 1;
         const p = { step, alter, octave };
@@ -98,8 +99,8 @@ export function simpleSpellings(midi: number): Pitch[] {
 }
 
 /**
- * Übliche Schreibweise: weiße Tasten ohne Vorzeichen, schwarze Tasten
- * mit Kreuz oder B (zufällig oder nach Präferenz).
+ * Common spelling: white keys without accidentals, black keys with sharp
+ * or flat (random or by preference).
  */
 export function commonSpellings(midi: number): Pitch[] {
   const all = simpleSpellings(midi);
@@ -108,7 +109,7 @@ export function commonSpellings(midi: number): Pitch[] {
   return all;
 }
 
-/** Schreibweise einer Taste passend zur Tonart (Kreuz- oder B-Tonart). */
+/** Spelling of a key matching the key signature (sharp or flat key). */
 export function spellForKey(midi: number, keyFifths: number): Pitch {
   const options = commonSpellings(midi);
   if (options.length === 1) return options[0];
@@ -116,36 +117,36 @@ export function spellForKey(midi: number, keyFifths: number): Pitch {
   return options.find((p) => (preferSharp ? p.alter > 0 : p.alter < 0)) ?? options[0];
 }
 
-/** Vorzeichen, die die Tonart für einen Stammton vorgibt. */
+/** Accidental the key signature implies for a step. */
 export function keyAlter(step: number, keyFifths: number): number {
-  // Kreuz-Reihenfolge: F C G D A E H
+  // Order of sharps: F C G D A E B
   const sharpOrder = [3, 0, 4, 1, 5, 2, 6];
-  // B-Reihenfolge: H E A D G C F
+  // Order of flats: B E A D G C F
   const flatOrder = [6, 2, 5, 1, 4, 0, 3];
   if (keyFifths > 0) return sharpOrder.slice(0, keyFifths).includes(step) ? 1 : 0;
   if (keyFifths < 0) return flatOrder.slice(0, -keyFifths).includes(step) ? -1 : 0;
   return 0;
 }
 
-/** Grundton einer Tonart aus Quintenzirkel-Position. */
+/** Tonic of a key from its circle-of-fifths position. */
 export function keyTonic(keyFifths: number, minor: boolean): PitchName {
-  // Dur-Tonika: C=0, G=1, … ; Moll: a=0
-  const majorStep = mod(keyFifths * 4, 7); // Quinte = 4 Stufen
+  // Major tonic: C=0, G=1, … ; minor: a=0
+  const majorStep = mod(keyFifths * 4, 7); // fifth = 4 steps
   const tonicMajor: PitchName = { step: majorStep, alter: keyAlter(majorStep, keyFifths) };
   if (!minor) return tonicMajor;
   const minorStep = mod(majorStep + 5, 7);
   return { step: minorStep, alter: keyAlter(minorStep, keyFifths) };
 }
 
-/** Pitch für VexFlow, z. B. "c#/4". Vorzeichen werden separat gezeichnet. */
+/** Pitch for VexFlow, e.g. "c#/4". Accidentals are drawn separately. */
 export function vexKey(p: Pitch): string {
   const acc = p.alter > 0 ? '#'.repeat(p.alter) : 'b'.repeat(-p.alter);
   return `${STEP_LETTERS_EN[p.step].toLowerCase()}${acc}/${p.octave}`;
 }
 
-/** Name für Tone.js, z. B. "C#4", "Bb3", "Fx4" (Doppelkreuz). */
+/** Name for Tone.js, e.g. "C#4", "Bb3", "Fx4" (double sharp). */
 export function toneName(p: Pitch): string {
-  // Tone.js akzeptiert auch MIDI-Frequenzen; über MIDI ist es eindeutig.
+  // Tone.js also accepts MIDI frequencies; going through MIDI is unambiguous.
   return midiToToneName(toMidi(p));
 }
 
@@ -158,7 +159,7 @@ export function isBlackKey(midi: number): boolean {
   return [1, 3, 6, 8, 10].includes(mod(midi, 12));
 }
 
-/** Alle Schreibweisen einer Taste mit höchstens zwei Vorzeichen. */
+/** All spellings of a key with at most two accidentals. */
 export function allSpellings(midi: number): Pitch[] {
   const out: Pitch[] = [];
   for (let step = 0; step < 7; step++) {

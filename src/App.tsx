@@ -9,7 +9,7 @@ import StatsPage from './pages/StatsPage';
 import SettingsPage from './pages/SettingsPage';
 import { useSettings } from './storage/store';
 
-// Notensatz (VexFlow) erst laden, wenn ein Diktat geöffnet wird
+// Load music notation (VexFlow) only when a dictation is opened
 const DictationPage = lazy(() => import('./pages/DictationPage'));
 
 export default function App() {
@@ -25,19 +25,19 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="intervalle" element={<IntervalsPage />} />
-          <Route path="akkorde" element={<ChordsPage />} />
-          <Route path="diktat/:kind" element={<DictationListPage />} />
+          <Route path="intervals" element={<IntervalsPage />} />
+          <Route path="chords" element={<ChordsPage />} />
+          <Route path="dictation/:kind" element={<DictationListPage />} />
           <Route
-            path="diktat/:kind/:id"
+            path="dictation/:kind/:id"
             element={
               <Suspense fallback={<p>Lade …</p>}>
                 <DictationPage />
               </Suspense>
             }
           />
-          <Route path="statistik" element={<StatsPage />} />
-          <Route path="einstellungen" element={<SettingsPage />} />
+          <Route path="stats" element={<StatsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Home />} />
         </Route>
       </Routes>

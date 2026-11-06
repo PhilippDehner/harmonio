@@ -28,7 +28,7 @@ export default function SettingsPage() {
   const settings = useSettings();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  // Entwurf des Eingabefelds, damit es beim Tippen auch leer sein darf
+  // Draft value of the input field, so it may be empty while typing
   const [secondsDraft, setSecondsDraft] = useState<string | null>(null);
 
   return (

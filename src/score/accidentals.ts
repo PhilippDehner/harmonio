@@ -1,12 +1,12 @@
 import { Pitch, keyAlter } from '../music/pitch';
 
 /**
- * Bestimmt, welche Versetzungszeichen innerhalb eines Taktes zu zeichnen
- * sind. Versetzungszeichen gelten bis zum Taktende für dieselbe Tonhöhe
- * (Stammton + Oktave), Grundlage sind die Vorzeichen der Tonart.
+ * Determines which accidentals to draw within a measure. Accidentals apply
+ * until the end of the measure for the same pitch (step + octave), starting
+ * from the key signature.
  *
- * Eingabe: Tonhöhen in zeitlicher Reihenfolge (Akkordtöne nacheinander).
- * Ausgabe: je Ton das zu zeichnende Zeichen ('#', 'b', 'n', '##', 'bb') oder null.
+ * Input: pitches in temporal order (chord tones one after another).
+ * Output: per note the sign to draw ('#', 'b', 'n', '##', 'bb') or null.
  */
 export function accidentalsInMeasure(pitches: Pitch[], keyFifths: number): (string | null)[] {
   const state = new Map<string, number>();

@@ -35,15 +35,19 @@ Technik: React, Vite, TypeScript, Tone.js (Klang), VexFlow (Notensatz), vite-plu
 
 MusicXML-Dateien (`.musicxml` oder `.xml`) in den passenden Ordner legen:
 
-- `diktate/einstimmig/`
-- `diktate/zweistimmig/`
-- `diktate/vierstimmig/` (Typ A und Typ B gemeinsam)
+- `dictations/monophonic/`
+- `dictations/two-part/`
+- `dictations/four-part/` (Typ A und Typ B gemeinsam)
 
 Die Liste wird beim Build automatisch erzeugt. Die Nummer des Diktats ergibt sich aus der ersten Zahl im Dateinamen (z. B. `07.musicxml` → Diktat 7).
 
 Unterstützter Umfang: ganze, halbe, Viertel- und Achtelnoten, jeweils punktiert und als Triolen; keine Pausen und Haltebögen. Ein Auftakt wird erkannt, wenn der erste Takt kürzer ist. Mehrstimmiges darf als mehrere Stimmen (`<voice>`), mehrere Systeme (`<staff>`) oder mehrere Parts vorliegen; Akkorde werden nach Tonhöhe auf Stimmen verteilt. Beim vierstimmigen Satz sind die Oberstimmen im oberen System als Akkord (ganze Noten) und der Bass im unteren System notiert. Das Tempo wird aus `<sound tempo>` bzw. `<metronome>` gelesen, sonst gilt 80 Viertel pro Minute.
 
 Die mitgelieferten Diktate sind einfache Beispiele zum Testen.
+
+## Neue Version
+
+Version in `package.json` erhöhen und oben in `src/changelog.ts` einen Eintrag mit den Änderungen (auf Deutsch) ergänzen. Nutzer sehen die Neuigkeiten beim nächsten Öffnen; über „Neuigkeiten“ im Fußbereich ist der ganze Verlauf abrufbar.
 
 ## Deployment
 

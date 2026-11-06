@@ -2,15 +2,15 @@ import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { getState, markTourSeen } from '../storage/store';
 
 export interface TourStep {
-  /** CSS-Selektor des hervorzuhebenden Elements (optional) */
+  /** CSS selector of the element to highlight (optional) */
   selector?: string;
   title: string;
   text: string;
 }
 
 /**
- * Einfache Guided Tour: startet beim ersten Öffnen automatisch,
- * lässt sich über den Hilfe-Button erneut starten.
+ * Simple guided tour: starts automatically on first visit and can be
+ * restarted via the help button.
  */
 export function useTour(id: string, steps: TourStep[]) {
   const [index, setIndex] = useState<number | null>(null);

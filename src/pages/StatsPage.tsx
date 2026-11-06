@@ -6,9 +6,9 @@ import { INTERVALS, intervalById } from '../music/intervals';
 import { aggregateStats, resetStats, useAppData } from '../storage/store';
 
 const MODES = [
-  { id: 'harmonisch', label: 'gleichzeitig' },
-  { id: 'aufwaerts', label: 'aufwärts' },
-  { id: 'abwaerts', label: 'abwärts' },
+  { id: 'harmonic', label: 'gleichzeitig' },
+  { id: 'ascending', label: 'aufwärts' },
+  { id: 'descending', label: 'abwärts' },
 ];
 
 function chordLabel(id: string) {
@@ -20,7 +20,7 @@ export default function StatsPage() {
   const data = useAppData();
   const s = aggregateStats(data.stats);
   const level2 = CHORD_TYPES.flatMap((t) =>
-    t.id === 'uberm' ? [chordAnswerId(t.id, null)] : INVERSIONS.map((i) => chordAnswerId(t.id, i.id)),
+    t.id === 'augmented' ? [chordAnswerId(t.id, null)] : INVERSIONS.map((i) => chordAnswerId(t.id, i.id)),
   );
   const attempts = [...data.dictations.attempts].sort((a, b) => b.date - a.date);
 
@@ -97,7 +97,7 @@ export default function StatsPage() {
                         <>
                           <td className="num">{a.pitchErrors}</td>
                           <td className="num">{a.followErrors}</td>
-                          <td className="num">{e?.kind === 'vierstimmig' ? '–' : a.rhythmErrors}</td>
+                          <td className="num">{e?.kind === 'four-part' ? '–' : a.rhythmErrors}</td>
                         </>
                       )}
                     </tr>
