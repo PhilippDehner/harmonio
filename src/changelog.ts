@@ -12,7 +12,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '1.5.0',
     date: '2026-11-06',
-    changes: ['Neu: Auf jeder Seite lässt sich über den 🎹-Knopf unten rechts ein Klavier ausklappen, um einzelne Töne anzuspielen.'],
+    changes: ['Neu: Auf jeder Seite lässt sich über den 🎹-Knopf unten rechts ein Klavier ausklappen, um einzelne Töne anzuspielen. Die schwarzen Tasten heißen cis, es, fis, gis und b.'],
   },
   {
     version: '1.4.1',

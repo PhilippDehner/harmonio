@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { germanName, isBlackKey, mod, spellForKey } from '../music/pitch';
+import { germanName, isBlackKey, mod, spellForKey, type Pitch } from '../music/pitch';
 
 interface Props {
   low: number;
@@ -9,13 +9,15 @@ interface Props {
   disabled?: boolean;
   /** Trigger on pointer down instead of click (lower latency when playing). */
   pressOnDown?: boolean;
+  /** Custom spelling for key labels (default: according to the key signature). */
+  spell?: (midi: number) => Pitch;
 }
 
 const WHITE_W = 40;
 const BLACK_W = 26;
 
 /** On-screen keyboard; black keys are named according to the key signature. */
-export default function Piano({ low, high, keyFifths, onKey, disabled, pressOnDown }: Props) {
+export default function Piano({ low, high, keyFifths, onKey, disabled, pressOnDown, spell }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const downHandled = useRef(false);
   // Extend the range to white keys
@@ -46,7 +48,7 @@ export default function Piano({ low, high, keyFifths, onKey, disabled, pressOnDo
     <div className="piano-wrap" ref={wrap}>
       <div className="piano" style={{ width: whiteIndex * WHITE_W }} role="group" aria-label="Klaviatur">
         {keys.map((k) => {
-          const p = spellForKey(k.midi, keyFifths);
+          const p = spell ? spell(k.midi) : spellForKey(k.midi, keyFifths);
           const name = germanName(p, true);
           const label = mod(k.midi, 12) === 0 ? `${name}${octaveMark(k.midi)}` : name;
           return (
