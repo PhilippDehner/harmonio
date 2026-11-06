@@ -9,6 +9,7 @@ const AREAS: Tile[] = [
   },
   {
     to: '/pitch-giving',
+    beta: true,
     title: 'Tonangabe',
     text: 'Vierstimmigen Akkord lesen, vom Kammerton A aus die Töne finden und nachsingen – mit Mikrofon.',
     icon: 'pitch',

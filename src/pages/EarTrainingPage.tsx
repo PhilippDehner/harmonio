@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom';
 import { unlockAudio } from '../audio/engine';
+import BetaBadge from '../components/BetaBadge';
 import TileIcon, { TileIconKind } from '../components/TileIcon';
 
 export interface Tile {
   to: string;
   tag?: string;
+  /** Feature still being tested */
+  beta?: boolean;
   title: string;
   text: string;
   icon: TileIconKind;
@@ -25,7 +28,10 @@ export function Tiles({ tiles }: { tiles: Tile[] }) {
         <Link key={t.to} to={t.to} className="tile" onClick={() => void unlockAudio()}>
           <TileIcon kind={t.icon} />
           {t.tag && <span className="tag">{t.tag}</span>}
-          <h2>{t.title}</h2>
+          <h2>
+            {t.title}
+            {t.beta && <BetaBadge />}
+          </h2>
           <p>{t.text}</p>
         </Link>
       ))}

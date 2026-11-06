@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import BetaBadge from '../components/BetaBadge';
 import { DEFAULT_A4, MAX_A4, MIN_A4 } from '../audio/tuning';
 import { SING_ORDERS, VOICE_LABEL } from '../music/pitchGiving';
 import { RANGES, RangeLevel, ThemeSetting, exportData, importData, updateSettings, useSettings } from '../storage/store';
@@ -145,7 +146,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="card stack">
-        <h2 style={{ marginTop: 0 }}>Stimmlage (Tonangabe)</h2>
+        <h2 style={{ marginTop: 0 }}>Stimmlage (Tonangabe) <BetaBadge /></h2>
         <p className="muted small" style={{ margin: 0 }}>
           Bestimmt, in welcher Oktave du die Töne singst: Männer singen Sopran und Alt eine Oktave tiefer, Frauen Tenor
           und Bass eine Oktave höher. „Neu erkennen“ startet beim nächsten Öffnen der Tonangabe die Erkennung per Mikrofon.
@@ -165,7 +166,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="card stack">
-        <h2 style={{ marginTop: 0 }}>Reihenfolge der Töne (Tonangabe)</h2>
+        <h2 style={{ marginTop: 0 }}>Reihenfolge der Töne (Tonangabe) <BetaBadge /></h2>
         <p className="muted small" style={{ margin: 0 }}>
           In welcher Reihenfolge du die vier Töne singst. Nach Funktion kommen zuerst beide Grundtöne (der tiefere
           zuerst), dann Quinte und Terz.

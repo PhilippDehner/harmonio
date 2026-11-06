@@ -5,6 +5,7 @@ import { MicFrame, useMic } from '../audio/mic';
 import { PitchHold, VoiceType, classifyVoice, freqToMidi } from '../audio/pitchDetect';
 import { useAutoNext } from '../components/autoNext';
 import { useHotkeys } from '../components/hotkeys';
+import BetaBadge, { BetaNotice } from '../components/BetaBadge';
 import SolutionScore from '../components/SolutionScore';
 import { LiveStats } from '../components/StatsViews';
 import { useTour } from '../components/Tour';
@@ -101,7 +102,10 @@ function VoiceSetup({ mic, handler, playA }: Shared) {
 
   return (
     <div className="stack">
-      <h1 style={{ margin: 0 }}>Tonangabe</h1>
+      <h1 style={{ margin: 0 }}>
+        Tonangabe <BetaBadge />
+      </h1>
+      <BetaNotice />
       <div className="card stack">
         <h2 style={{ marginTop: 0 }}>Stimmlage erkennen</h2>
         <p style={{ margin: 0 }}>
@@ -271,12 +275,15 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   return (
     <div className="stack">
       <div className="row">
-        <h1 style={{ margin: 0 }}>Tonangabe</h1>
+        <h1 style={{ margin: 0 }}>
+          Tonangabe <BetaBadge />
+        </h1>
         <span className="spacer" />
         <button onClick={tour.start} aria-label="Hilfe: Tour starten">
           Hilfe
         </button>
       </div>
+      <BetaNotice />
 
       <div className="toolbar">
         <span>
