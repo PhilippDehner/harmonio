@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.3.0',
+    date: '2026-11-06',
+    changes: [
+      'Neu: Stimmton in den Einstellungen wählbar (a′ = 410–450 Hz, Standard 440 Hz). Gilt für alle Klänge und für die Auswertung in der Tonangabe.',
+    ],
+  },
+  {
     version: '1.2.0',
     date: '2026-11-06',
     changes: [

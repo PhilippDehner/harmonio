@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import { midiToToneName } from '../music/pitch';
+import { midiToFreq } from './pitchDetect';
 
 /** Available Salamander samples (every minor third); the rest is interpolated. */
 const SAMPLE_NOTES: string[] = (() => {
@@ -113,7 +113,8 @@ export async function play(opts: PlayOptions): Promise<void> {
   for (const s of opts.sounds) {
     if (s.time < from - 1e-6) continue;
     const at = s.time - from;
-    const names = s.midi.map(midiToToneName);
+    // Frequencies in Hz, so the configured concert pitch is applied
+    const names = s.midi.map((m) => midiToFreq(m));
     transport.schedule((time) => {
       if (s.duration !== undefined) sampler!.triggerAttackRelease(names, s.duration, time, 0.8);
       else sampler!.triggerAttack(names, time, 0.8);
