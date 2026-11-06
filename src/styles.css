@@ -12,6 +12,8 @@
   --ok-soft: #e3f4ea;
   --err: #c62f2f;
   --err-soft: #fbe6e6;
+  --warn: #b85c00;
+  --warn-soft: #fdeedd;
   --follow: #d07a00;
   --rhythm: #7b3fc4;
   --focus: #f0a400;
@@ -34,6 +36,8 @@
     --ok-soft: #173426;
     --err: #ff6b6b;
     --err-soft: #3d1d1f;
+    --warn: #f5a04a;
+    --warn-soft: #3d2a17;
     --follow: #f2a33a;
     --rhythm: #b48cf2;
     color-scheme: dark;
@@ -54,6 +58,8 @@
   --ok-soft: #173426;
   --err: #ff6b6b;
   --err-soft: #3d1d1f;
+  --warn: #f5a04a;
+  --warn-soft: #3d2a17;
   --follow: #f2a33a;
   --rhythm: #b48cf2;
   color-scheme: dark;
@@ -471,6 +477,11 @@ kbd.hint {
   color: var(--err);
 }
 
+.feedback.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
 .feedback.info {
   background: var(--accent-soft);
 }
@@ -868,6 +879,10 @@ button.primary kbd.hint {
 
 .voice-list tr.err td {
   color: var(--err);
+}
+
+.voice-list tr.warn td {
+  color: var(--warn);
 }
 
 .voice-list button.mini {

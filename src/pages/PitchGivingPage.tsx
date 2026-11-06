@@ -24,6 +24,7 @@ import {
   nearestNoteName,
   singOrder,
   sungPitch,
+  sungStatus,
 } from '../music/pitchGiving';
 import { ChordTask } from '../music/tasks';
 import { updateSettings, useSettings } from '../storage/store';
@@ -201,7 +202,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     resultsRef.current = updated;
     setResults(updated);
     if (finished) {
-      const ok = updated.every((x) => x?.correct);
+      const ok = updated.every((x) => x?.octaveOk);
       setSession((s) => ({ correct: s.correct + (ok ? 1 : 0), wrong: s.wrong + (ok ? 0 : 1) }));
     }
     setPos(posRef.current);
@@ -263,13 +264,16 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     }
   });
 
-  const allCorrect = done && results.every((r) => r?.correct);
-  const correctCount = results.filter((r) => r?.correct).length;
+  const allCorrect = done && results.every((r) => r?.octaveOk);
+  const pitchesCorrect = done && results.every((r) => r?.correct);
+  const correctCount = results.filter((r) => r?.octaveOk).length;
+  const octaveCount = results.filter((r) => r && sungStatus(r) === 'octave').length;
+  const marks = results.map((r) => (!r?.correct ? true : r.octaveOk ? false : 'warn'));
   const meanCents = Math.round(results.reduce((sum, r) => sum + Math.abs(r?.cents ?? 0), 0) / 4);
   const autoNextIn = useAutoNext(done, allCorrect, next);
   // Chord as sung (wrong notes replaced), in the written octaves
   const sungVoicing: Pitch[] | null =
-    done && !allCorrect ? task.voicing.notes.map((p, i) => sungPitch(p, results[i]!, task.root)) : null;
+    done && !pitchesCorrect ? task.voicing.notes.map((p, i) => sungPitch(p, results[i]!, task.root)) : null;
   const playSung = () => sungVoicing && playChord(sungVoicing.map(toMidi));
 
   return (
@@ -318,7 +322,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
         <SolutionScore
           sounds={[task.voicing.notes]}
           satb
-          marked={done ? [results.map((r) => !r?.correct)] : undefined}
+          marked={done ? [marks] : undefined}
           title={sungVoicing ? 'Akkord' : undefined}
           ariaLabel={`Akkord: ${task.voicing.notes.map(germanNameWithOctave).join(', ')}`}
         />
@@ -327,7 +331,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
             title="Deine Töne"
             sounds={[sungVoicing]}
             satb
-            marked={[results.map((r) => !r?.correct)]}
+            marked={[marks]}
             ariaLabel={`Deine Töne: ${sungVoicing.map(germanNameWithOctave).join(', ')}`}
           />
         )}
@@ -372,7 +376,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
               const current = i === pos && !done;
               const target = germanName(task.voicing.notes[vi]);
               return (
-                <tr key={vi} className={current ? 'current' : r ? (r.correct ? 'ok' : 'err') : ''}>
+                <tr key={vi} className={current ? 'current' : r ? { ok: 'ok', octave: 'warn', wrong: 'err' }[sungStatus(r)] : ''}>
                   <th scope="row">
                     {VOICE_NAMES[vi]}
                     {settings.singOrder === 'function' && (
@@ -383,7 +387,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
                     {r ? (
                       r.correct ? (
                         <>
-                          ✓ richtig: {target}
+                          {r.octaveOk ? '✓ richtig' : '~ falsche Oktave'}: {target}
                           <span className="small">
                             {' '}
                             – {describeIntonation(r.cents)}
@@ -433,17 +437,20 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
         </table>
         <p className="muted small" style={{ marginBottom: 0 }}>
           <b>Cent</b> ist ein Maß für feine Tonhöhenunterschiede: Ein Halbton hat 100 Cent. Ein Ton gilt als richtig,
-          wenn er höchstens 50 Cent neben dem Zielton liegt, also näher an ihm als am Nachbarton. Bei richtigen Tönen
+          wenn er höchstens 50 Cent neben dem Zielton liegt, also näher an ihm als am Nachbarton. Stimmt der Ton, aber
+          nicht die Oktave, wird er orange markiert. Bei richtigen Tönen
           zeigt die Cent-Zahl, wie sauber du intoniert hast: Bis etwa 10 Cent ist die Abweichung kaum hörbar, ab etwa
           20 Cent klingt der Akkord merklich unsauber.
         </p>
       </div>
 
       {done && (
-        <div className={`feedback ${allCorrect ? 'ok' : 'err'}`} role="status">
+        <div className={`feedback ${allCorrect ? 'ok' : pitchesCorrect ? 'warn' : 'err'}`} role="status">
           {allCorrect
             ? `Alle vier Töne richtig – im Schnitt ${meanCents} Cent daneben.`
-            : `${correctCount} von 4 Tönen richtig.`}
+            : pitchesCorrect
+              ? `Alle Tonnamen richtig, aber ${octaveCount === 1 ? 'ein Ton' : `${octaveCount} Töne`} in der falschen Oktave.`
+              : `${correctCount} von 4 Tönen richtig${octaveCount ? `, ${octaveCount} in der falschen Oktave` : ''}.`}
         </div>
       )}
       {tour.element}

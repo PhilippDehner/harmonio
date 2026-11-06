@@ -65,18 +65,29 @@ export interface SungResult {
   cents: number;
   /** Sung octave relative to the expected one (e.g. −1 = one octave lower) */
   octaveShift: number;
+  /** Right note name (within tolerance), regardless of octave */
   correct: boolean;
+  /** Right note in the expected octave */
+  octaveOk: boolean;
+}
+
+/** Overall rating of a sung note: wrong octave is a minor error. */
+export type SungStatus = 'ok' | 'octave' | 'wrong';
+
+export function sungStatus(r: SungResult): SungStatus {
+  return !r.correct ? 'wrong' : r.octaveOk ? 'ok' : 'octave';
 }
 
 /** Tolerance in cents within which a note counts as correct (= nearest semitone). */
 export const TOLERANCE_CENTS = 50;
 
-/** Evaluates a sung note; the octave does not count as an error. */
+/** Evaluates a sung note; a wrong octave is reported separately (`octaveOk`). */
 export function evaluateSung(freq: number, expected: number): SungResult {
   const diff = freqToMidi(freq) - expected;
   const octaveShift = Math.round(diff / 12);
   const cents = Math.round((diff - 12 * octaveShift) * 100);
-  return { freq, cents, octaveShift, correct: Math.abs(cents) <= TOLERANCE_CENTS };
+  const correct = Math.abs(cents) <= TOLERANCE_CENTS;
+  return { freq, cents, octaveShift, correct, octaveOk: correct && octaveShift === 0 };
 }
 
 const NAMES: [number, number][] = [

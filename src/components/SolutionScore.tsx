@@ -14,8 +14,8 @@ type Props = {
   /** Fixed assignment: voices 0–1 in treble, 2–3 in bass clef (four-part chorale). */
   satb?: boolean;
   ariaLabel: string;
-  /** Notes to highlight in red, with the same shape as `sounds`. */
-  marked?: boolean[][];
+  /** Notes to highlight (true = red, 'warn' = orange), with the same shape as `sounds`. */
+  marked?: (boolean | 'warn')[][];
   /** Heading displayed above the score. */
   title?: string;
 };
@@ -62,12 +62,15 @@ export default function SolutionScore({ sounds, satb, ariaLabel, marked, title }
 
   const noteStyles = useMemo(() => {
     if (!marked) return undefined;
-    const err = getComputedStyle(document.documentElement).getPropertyValue('--err').trim();
+    const css = getComputedStyle(document.documentElement);
+    const err = css.getPropertyValue('--err').trim();
+    const warn = css.getPropertyValue('--warn').trim();
     const styles: Record<string, NoteStyle> = {};
     for (const v of input.voices)
       for (const n of v) {
         const [i, j] = n.id.split('-').map(Number);
-        if (marked[i]?.[j]) styles[n.id] = { head: err, stem: err };
+        const m = marked[i]?.[j];
+        if (m) styles[n.id] = m === 'warn' ? { head: warn, stem: warn } : { head: err, stem: err };
       }
     return styles;
     // `theme`: Farbe nach Umschalten des Farbschemas neu bestimmen
