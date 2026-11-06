@@ -200,8 +200,21 @@ function load(): AppData {
   };
 }
 
+/**
+ * Sets the color scheme on <html> synchronously, before React re-renders,
+ * so components that read CSS colors while rendering (VexFlow scores) see
+ * the new values immediately.
+ */
+function applyTheme(theme: ThemeSetting) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  if (theme === 'system') delete root.dataset.theme;
+  else root.dataset.theme = theme;
+}
+
 let state: AppData = load();
 setA4(state.settings.tuningA4);
+applyTheme(state.settings.theme);
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -220,6 +233,7 @@ export function getState(): AppData {
 function setState(next: AppData) {
   state = next;
   setA4(state.settings.tuningA4);
+  applyTheme(state.settings.theme);
   write('settings', state.settings);
   write('stats', state.stats);
   write('dictations', state.dictations);
