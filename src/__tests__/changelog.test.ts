@@ -16,7 +16,7 @@ describe('Changelog', () => {
     expect(compareVersions('1.1', '1.1.0')).toBe(0);
   });
   it('returns the entries since a version', () => {
-    expect(changesSince('1.0.0').map((e) => e.version)).toEqual(['1.1.0']);
+    expect(changesSince('1.0.0').map((e) => e.version)).toEqual(['1.2.0', '1.1.0']);
     expect(changesSince(pkg.version)).toEqual([]);
   });
 });

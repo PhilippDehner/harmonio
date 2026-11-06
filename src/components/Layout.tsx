@@ -22,7 +22,7 @@ function ThemeToggle() {
 
 export default function Layout() {
   const location = useLocation();
-  const isExercise = location.pathname !== '/' && !['/stats', '/settings'].includes(location.pathname);
+  const isExercise = location.pathname !== '/' && !['/stats', '/settings', '/ear-training'].includes(location.pathname);
   return (
     <>
       <header className="site-header">
