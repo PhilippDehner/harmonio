@@ -10,6 +10,7 @@ import {
   nearestNoteName,
   singOrder,
   sungPitch,
+  sungStatus,
 } from '../music/pitchGiving';
 import { germanName, toMidi } from '../music/pitch';
 
@@ -104,10 +105,13 @@ describe('Pitch giving', () => {
     expect(expectedMidi(c4, 3, 'female')).toBe(72);
     expect(expectedMidi(c4, 3, 'male')).toBe(60);
   });
-  it('evaluation: cent deviation, octave is not an error', () => {
+  it('evaluation: cent deviation, wrong octave is a minor error', () => {
     const e = toMidi({ step: 5, alter: 0, octave: 3 }); // a = 220 Hz
-    expect(evaluateSung(220, e)).toMatchObject({ cents: 0, octaveShift: 0, correct: true });
-    expect(evaluateSung(440, e)).toMatchObject({ cents: 0, octaveShift: 1, correct: true });
+    expect(evaluateSung(220, e)).toMatchObject({ cents: 0, octaveShift: 0, correct: true, octaveOk: true });
+    expect(evaluateSung(440, e)).toMatchObject({ cents: 0, octaveShift: 1, correct: true, octaveOk: false });
+    expect(sungStatus(evaluateSung(220, e))).toBe('ok');
+    expect(sungStatus(evaluateSung(110, e))).toBe('octave');
+    expect(sungStatus(evaluateSung(midiToFreq(e + 13), e))).toBe('wrong');
     expect(evaluateSung(midiToFreq(e + 0.3), e)).toMatchObject({ cents: 30, correct: true });
     expect(evaluateSung(midiToFreq(e - 0.7), e)).toMatchObject({ cents: -70, correct: false });
     expect(evaluateSung(midiToFreq(e + 2), e).correct).toBe(false);
