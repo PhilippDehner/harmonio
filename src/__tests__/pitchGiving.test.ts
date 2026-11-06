@@ -1,3 +1,4 @@
+import { clampA4, setA4 } from '../audio/tuning';
 import { describe, expect, it } from 'vitest';
 import { PitchHold, classifyVoice, detectPitch, freqToMidi, midiToFreq } from '../audio/pitchDetect';
 import {
@@ -35,6 +36,24 @@ describe('Pitch detection', () => {
   it('converts frequency and MIDI', () => {
     expect(freqToMidi(440)).toBeCloseTo(69);
     expect(midiToFreq(57)).toBeCloseTo(220);
+  });
+  it('uses the configured concert pitch', () => {
+    setA4(415);
+    try {
+      expect(midiToFreq(69)).toBeCloseTo(415);
+      expect(freqToMidi(415)).toBeCloseTo(69);
+      expect(evaluateSung(415, 69)).toMatchObject({ cents: 0, correct: true });
+      expect(classifyVoice(415)).toBe('female');
+      expect(classifyVoice(207.5)).toBe('male');
+    } finally {
+      setA4(440);
+    }
+  });
+  it('clamps the concert pitch', () => {
+    expect(clampA4(400)).toBe(410);
+    expect(clampA4(460)).toBe(450);
+    expect(clampA4(442.4)).toBe(442);
+    expect(clampA4('x')).toBe(440);
   });
 });
 

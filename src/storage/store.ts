@@ -3,6 +3,7 @@ import type { DNote } from '../dictation/model';
 import type { IntervalPlayMode } from '../music/tasks';
 import type { VoiceType } from '../audio/pitchDetect';
 import type { SingOrder } from '../music/pitchGiving';
+import { DEFAULT_A4, setA4 } from '../audio/tuning';
 import { migrateDictations, migrateSettings, migrateStats, migrateTours } from './migrate';
 
 const PREFIX = 'harmonio:';
@@ -60,6 +61,8 @@ export interface Settings {
   voiceType: VoiceType | null;
   /** Order in which the notes are sung in the pitch-giving exercise */
   singOrder: SingOrder;
+  /** Concert pitch a' in Hz (410–450) */
+  tuningA4: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -78,6 +81,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoNextSeconds: 2,
   voiceType: null,
   singOrder: 'up',
+  tuningA4: DEFAULT_A4,
 };
 
 export const RANGES: Record<RangeLevel, { label: string; midi: [number, number]; text: string }> = {
@@ -171,6 +175,7 @@ function load(): AppData {
 }
 
 let state: AppData = load();
+setA4(state.settings.tuningA4);
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -188,6 +193,7 @@ export function getState(): AppData {
 
 function setState(next: AppData) {
   state = next;
+  setA4(state.settings.tuningA4);
   write('settings', state.settings);
   write('stats', state.stats);
   write('dictations', state.dictations);

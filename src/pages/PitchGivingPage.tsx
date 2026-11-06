@@ -71,6 +71,7 @@ function MicControls({ mic }: { mic: Mic }) {
 /* ---------- Voice type detection ---------- */
 
 function VoiceSetup({ mic, handler, playA }: Shared) {
+  const settings = useSettings();
   const [step, setStep] = useState<'intro' | 'listen' | 'confirm'>('intro');
   const [live, setLive] = useState<number | null>(null);
   const [detected, setDetected] = useState<number | null>(null);
@@ -104,7 +105,7 @@ function VoiceSetup({ mic, handler, playA }: Shared) {
       <div className="card stack">
         <h2 style={{ marginTop: 0 }}>Stimmlage erkennen</h2>
         <p style={{ margin: 0 }}>
-          Damit die Übung weiß, in welcher Oktave du singst: Hör dir das A (440 Hz) an und singe es danach auf einem
+          Damit die Übung weiß, in welcher Oktave du singst: Hör dir das A ({settings.tuningA4} Hz) an und singe es danach auf einem
           bequemen Vokal nach, bis es erkannt ist.
         </p>
         <div className="play-area">
@@ -177,7 +178,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const done = pos >= order.length;
 
   const tour = useTour('pitch-giving', [
-    { title: 'Tonangabe', text: 'Du siehst einen vierstimmigen Akkord und hörst nur das A (440 Hz). Finde davon ausgehend die Töne des Akkords.' },
+    { title: 'Tonangabe', text: `Du siehst einen vierstimmigen Akkord und hörst nur das A (${settings.tuningA4} Hz). Finde davon ausgehend die Töne des Akkords.` },
     { selector: '#tg-a', title: 'A abspielen', text: 'Spiele das A beliebig oft ab (Leertaste).' },
     { selector: '#tg-voices', title: 'Singen', text: `Singe die vier Töne nacheinander ${SING_ORDERS.find((o) => o.id === settings.singOrder)!.text} und halte jeden kurz, bis er erkannt ist. Du musst nichts anklicken: Nach jedem erkannten Ton geht es automatisch mit der nächsten Stimme weiter. Setze zwischen den Tönen nur kurz ab. Die Reihenfolge wählst du oben unter „Reihenfolge“.` },
   ]);
@@ -327,7 +328,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
 
       <div className="play-area card">
         <button id="tg-a" className="primary" onClick={playA}>
-          ▶ A (440 Hz) <kbd className="hint">Leertaste</kbd>
+          ▶ A ({settings.tuningA4} Hz) <kbd className="hint">Leertaste</kbd>
         </button>
         <MicControls mic={mic} />
         {done && (

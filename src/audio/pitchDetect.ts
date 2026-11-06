@@ -1,3 +1,4 @@
+import { getA4 } from './tuning';
 /**
  * Pitch detection (YIN) and tracking of sung notes.
  * Pure functions without browser dependencies so they are testable.
@@ -69,13 +70,13 @@ export function detectPitch(
   return { freq: sampleRate / better, clarity: 1 - cmnd[tau] };
 }
 
-/** Frequency → MIDI number (not rounded), a' = 440 Hz = 69. */
-export function freqToMidi(freq: number): number {
-  return 69 + 12 * Math.log2(freq / 440);
+/** Frequency → MIDI number (not rounded), a' = concert pitch (default 440 Hz) = 69. */
+export function freqToMidi(freq: number, a4 = getA4()): number {
+  return 69 + 12 * Math.log2(freq / a4);
 }
 
-export function midiToFreq(midi: number): number {
-  return 440 * 2 ** ((midi - 69) / 12);
+export function midiToFreq(midi: number, a4 = getA4()): number {
+  return a4 * 2 ** ((midi - 69) / 12);
 }
 
 function median(values: number[]): number {
@@ -148,9 +149,9 @@ export class PitchHold {
 export type VoiceType = 'male' | 'female';
 
 /**
- * Voice type from the sung-back A: around 440 Hz → female,
- * around 220 Hz (or lower) → male. Boundary in the middle (tritone).
+ * Voice type from the sung-back A: around a' → female, around a (or lower)
+ * → male. Boundary in the middle (tritone, es').
  */
 export function classifyVoice(freq: number): VoiceType {
-  return freq >= Math.sqrt(220 * 440) ? 'female' : 'male';
+  return freqToMidi(freq) >= 63 ? 'female' : 'male';
 }

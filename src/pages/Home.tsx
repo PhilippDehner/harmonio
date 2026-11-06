@@ -10,7 +10,7 @@ const AREAS: Tile[] = [
   {
     to: '/pitch-giving',
     title: 'Tonangabe',
-    text: 'Vierstimmigen Akkord lesen, vom A (440 Hz) aus die Töne finden und nachsingen – mit Mikrofon.',
+    text: 'Vierstimmigen Akkord lesen, vom Kammerton A aus die Töne finden und nachsingen – mit Mikrofon.',
     icon: 'pitch',
   },
 ];

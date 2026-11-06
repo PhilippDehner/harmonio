@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { DEFAULT_A4, MAX_A4, MIN_A4 } from '../audio/tuning';
 import { SING_ORDERS, VOICE_LABEL } from '../music/pitchGiving';
 import { RANGES, RangeLevel, ThemeSetting, exportData, importData, updateSettings, useSettings } from '../storage/store';
 
@@ -31,6 +32,7 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   // Draft value of the input field, so it may be empty while typing
   const [secondsDraft, setSecondsDraft] = useState<string | null>(null);
+  const [a4Draft, setA4Draft] = useState<string | null>(null);
 
   return (
     <div className="stack">
@@ -48,6 +50,34 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="card stack">
+        <h2 style={{ marginTop: 0 }}>Stimmton</h2>
+        <p className="muted small" style={{ margin: 0 }}>
+          Frequenz des Kammertons a′ ({MIN_A4}–{MAX_A4} Hz). Gilt für alle Klänge und für die Auswertung beim Singen.
+        </p>
+        <label className="row" style={{ gap: 6 }}>
+          a′ =
+          <input
+            type="number"
+            min={MIN_A4}
+            max={MAX_A4}
+            step={1}
+            value={a4Draft ?? settings.tuningA4}
+            onChange={(e) => {
+              setA4Draft(e.target.value);
+              const v = Math.round(Number(e.target.value));
+              if (e.target.value !== '' && v >= MIN_A4 && v <= MAX_A4) updateSettings({ tuningA4: v });
+            }}
+            onBlur={() => setA4Draft(null)}
+            style={{ width: '5em' }}
+          />
+          Hz
+          <button onClick={() => updateSettings({ tuningA4: DEFAULT_A4 })} disabled={settings.tuningA4 === DEFAULT_A4}>
+            Standard ({DEFAULT_A4} Hz)
+          </button>
+        </label>
       </div>
 
       <div className="card stack">
