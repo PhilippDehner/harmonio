@@ -182,6 +182,7 @@ describe('Pitch giving difficulty', () => {
     major: true,
     minor: true,
     wide: true,
+    inversions: true,
     ...o,
   });
   it('key signature of a chord root', () => {
@@ -207,11 +208,28 @@ describe('Pitch giving difficulty', () => {
       expect(f).toBeLessThanOrEqual(7);
     }
   });
+  it('without inversions the bass is always the root', () => {
+    for (const wide of [true, false])
+      for (let i = 0; i < 300; i++) {
+        const t = makePitchGivingTask(opts({ wide, inversions: false }));
+        expect(t.inversion).toBe('root');
+        const bass = t.voicing.notes[3];
+        expect([bass.step, bass.alter]).toEqual([t.root.step, t.root.alter]);
+      }
+  });
+  it('with inversions all three bass tones occur', () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 300; i++) seen.add(makePitchGivingTask(opts({ inversions: true })).inversion);
+    expect(seen).toEqual(new Set(['root', 'first', 'second']));
+  });
   it('every combination yields tasks', () => {
     for (const fewAccidentals of [true, false])
       for (const major of [true, false])
         for (const wide of [true, false])
-          for (let i = 0; i < 50; i++)
-            makePitchGivingTask(opts({ fewAccidentals, manyAccidentals: !fewAccidentals, major, minor: !major, wide }));
+          for (const inversions of [true, false])
+            for (let i = 0; i < 50; i++)
+              makePitchGivingTask(
+                opts({ fewAccidentals, manyAccidentals: !fewAccidentals, major, minor: !major, wide, inversions }),
+              );
   });
 });

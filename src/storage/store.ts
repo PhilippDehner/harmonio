@@ -73,6 +73,8 @@ export interface Settings {
   pgMinor: boolean;
   /** Pitch giving: also wide positions and notes far from a' */
   pgWide: boolean;
+  /** Pitch giving: also inversions (otherwise the bass always sings the root) */
+  pgInversions: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -97,6 +99,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pgMajor: true,
   pgMinor: false,
   pgWide: false,
+  pgInversions: false,
 };
 
 /** Pitch-giving options from the settings. */
@@ -107,6 +110,7 @@ export function pitchGivingOptions(s: Settings): PitchGivingOptions {
     major: s.pgMajor,
     minor: s.pgMinor,
     wide: s.pgWide,
+    inversions: s.pgInversions,
   };
 }
 

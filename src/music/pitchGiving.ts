@@ -13,6 +13,8 @@ export interface PitchGivingOptions {
   minor: boolean;
   /** Also wide positions and notes far from a' (otherwise close positions in a middle range) */
   wide: boolean;
+  /** Also inversions (bass on third or fifth); otherwise the bass always sings the root */
+  inversions: boolean;
 }
 
 export const DEFAULT_PITCH_GIVING_OPTIONS: PitchGivingOptions = {
@@ -21,6 +23,7 @@ export const DEFAULT_PITCH_GIVING_OPTIONS: PitchGivingOptions = {
   major: true,
   minor: false,
   wide: false,
+  inversions: false,
 };
 
 /** Accidentals that count as "few". */
@@ -77,7 +80,7 @@ export function pitchGivingChords(o: PitchGivingOptions): { root: Pitch; type: C
   return out;
 }
 
-/** Pitch giving: major and/or minor chords in any inversion, according to the options. */
+/** Pitch giving: major and/or minor chords in root position or any inversion, according to the options. */
 export function makePitchGivingTask(
   options: PitchGivingOptions = DEFAULT_PITCH_GIVING_OPTIONS,
   rng: Rng = Math.random,
@@ -87,7 +90,7 @@ export function makePitchGivingTask(
   if (chords.length === 0) chords = pitchGivingChords(DEFAULT_PITCH_GIVING_OPTIONS);
   for (let attempt = 0; attempt < 100; attempt++) {
     const { root, type } = pick(chords, rng);
-    const inversion = pick(INVERSIONS, rng);
+    const inversion = options.inversions ? pick(INVERSIONS, rng) : 'root';
     let voicings = allVoicings(root, type, inversion);
     if (!options.wide) voicings = voicings.filter(isCloseVoicing);
     if (voicings.length > 0) return { type, inversion, root, voicing: pick(voicings, rng) };
