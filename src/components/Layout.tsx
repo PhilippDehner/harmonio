@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { GITHUB_URL, LINKEDIN_URL, REPO_URL, SITE_NAME } from '../config';
+import { APP_VERSION, GITHUB_URL, LINKEDIN_URL, REPO_URL, SITE_NAME } from '../config';
 import { updateSettings, useSettings } from '../storage/store';
 import AudioHint from './AudioHint';
 
@@ -49,9 +49,10 @@ export default function Layout() {
         </p>
         <p>
           Klavier-Samples:{' '}
-          <a href="https://archive.org/details/SalamanderGrandPianoV3" target="_blank" rel="noopener noreferrer">Salamander Grand Piano</a> von Alexander Holm,
+          <a href="https://archive.org/details/SalamanderGrandPianoV3" target="_blank" rel="noopener noreferrer">Salamander Grand Piano</a>,
           Lizenz <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>
         </p>
+        <p className="version">Version {APP_VERSION}</p>
       </footer>
       {isExercise && <AudioHint />}
     </>
