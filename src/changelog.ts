@@ -10,6 +10,11 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.3.1',
+    date: '2026-11-06',
+    changes: ['Die Tonangabe ist als Beta gekennzeichnet: Sie wird noch erprobt, die Tonerkennung kann ungenau sein.'],
+  },
+  {
     version: '1.3.0',
     date: '2026-11-06',
     changes: [
