@@ -19,6 +19,7 @@ import {
   describeIntonation,
   formatCents,
   functionName,
+  keyFifthsOf,
   makePitchGivingTask,
   nearestNoteName,
   singOrder,
@@ -190,8 +191,8 @@ function PitchGivingOptionsBar() {
       {OPTION_GROUPS.map((g) => {
         const checkedCount = g.items.filter((it) => settings[it.key]).length;
         return (
-          <div key={g.label} className="row" role="group" aria-label={g.label}>
-            <span className="muted small">{g.label}:</span>
+          <div key={g.label} className="option-group" role="group" aria-label={g.label}>
+            <span className="option-group-label muted small">{g.label}</span>
             {g.items.map((it) => {
               const checked = settings[it.key] as boolean;
               return (
@@ -210,10 +211,13 @@ function PitchGivingOptionsBar() {
           </div>
         );
       })}
-      <label className="toggle" title="Ohne Haken: enge Lage der Oberstimmen und Töne in mittlerer Höhe (nahe am A)">
-        <input type="checkbox" checked={settings.pgWide} onChange={(e) => updateSettings({ pgWide: e.target.checked })} />
-        auch weite Lagen
-      </label>
+      <div className="option-group" role="group" aria-label="Lage">
+        <span className="option-group-label muted small">Lage</span>
+        <label className="toggle" title="Ohne Haken: enge Lage der Oberstimmen und Töne in mittlerer Höhe (nahe am A)">
+          <input type="checkbox" checked={settings.pgWide} onChange={(e) => updateSettings({ pgWide: e.target.checked })} />
+          auch weite Lagen
+        </label>
+      </div>
     </div>
   );
 }
@@ -321,6 +325,8 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   }, [mic.state]);
 
   const chordMidi = task.voicing.notes.map(toMidi);
+  // Key signature of the chord's key instead of accidentals on the notes
+  const keyFifths = keyFifthsOf(task.root, task.type === 'minor') ?? 0;
 
   useHotkeys((e, key) => {
     if (key === ' ') {
@@ -394,6 +400,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
         <SolutionScore
           sounds={[task.voicing.notes]}
           satb
+          keyFifths={keyFifths}
           marked={done ? [marks] : undefined}
           title={sungVoicing ? 'Akkord' : undefined}
           ariaLabel={`Akkord: ${task.voicing.notes.map(germanNameWithOctave).join(', ')}`}
@@ -403,6 +410,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
             title="Deine Töne"
             sounds={[sungVoicing]}
             satb
+            keyFifths={keyFifths}
             marked={[marks]}
             ariaLabel={`Deine Töne: ${sungVoicing.map(germanNameWithOctave).join(', ')}`}
           />

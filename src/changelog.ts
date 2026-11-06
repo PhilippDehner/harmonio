@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.4.1',
+    date: '2026-11-06',
+    changes: [
+      'Tonangabe: Der Akkord steht mit der Vorzeichnung seiner Tonart statt mit Versetzungszeichen vor den Noten.',
+      'Tonangabe: Die Einstellungen Vorzeichen, Tongeschlecht und Lage sind als getrennte Gruppen umrandet.',
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-11-06',
     changes: [

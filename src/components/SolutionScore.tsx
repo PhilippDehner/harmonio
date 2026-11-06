@@ -18,10 +18,12 @@ type Props = {
   marked?: (boolean | 'warn')[][];
   /** Heading displayed above the score. */
   title?: string;
+  /** Key signature (circle-of-fifths position); default: none. */
+  keyFifths?: number;
 };
 
-/** Score of the solution (whole notes, without time and key signature). */
-export default function SolutionScore({ sounds, satb, ariaLabel, marked, title }: Props) {
+/** Score of the solution (whole notes, without time signature). */
+export default function SolutionScore({ sounds, satb, ariaLabel, marked, title, keyFifths = 0 }: Props) {
   const { theme } = useSettings();
   const input = useMemo(() => {
     const measures: Measure[] = [{ start: 0, ticks: TICKS * Math.max(1, sounds.length) }];
@@ -82,7 +84,7 @@ export default function SolutionScore({ sounds, satb, ariaLabel, marked, title }
       {title && <div className="solution-score-title muted small">{title}</div>}
       <ScoreView
         ariaLabel={ariaLabel}
-        keyFifths={0}
+        keyFifths={keyFifths}
         beats={4}
         beatType={4}
         showTime={false}
