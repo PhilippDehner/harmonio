@@ -1,22 +1,74 @@
+import type React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { APP_VERSION, GITHUB_URL, LINKEDIN_URL, REPO_URL, SITE_NAME } from '../config';
-import { updateSettings, useSettings } from '../storage/store';
+import { ThemeSetting, updateSettings, useSettings } from '../storage/store';
 import AudioHint from './AudioHint';
+import PianoDock from './PianoDock';
 import WhatsNew, { ChangelogButton } from './WhatsNew';
+
+const iconProps = {
+  width: 18,
+  height: 18,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round' as const,
+  'aria-hidden': true,
+};
+
+const SunIcon = () => (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="4.5" />
+    <path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" />
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg {...iconProps}>
+    <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
+  </svg>
+);
+
+/** Halb Sonne (links), halb Mond (rechts) */
+const SystemIcon = () => (
+  <svg {...iconProps}>
+    <path d="M12 6.5a5.5 5.5 0 0 0 0 11z" />
+    <path d="M12 6.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" />
+    <path d="M12 2v2M12 20v2M2 12h2.5M4.9 4.9l1.6 1.6M4.9 19.1l1.6-1.6" />
+  </svg>
+);
+
+const THEME_OPTIONS: [ThemeSetting, string, () => React.JSX.Element][] = [
+  ['light', 'Heller Modus', SunIcon],
+  ['system', 'Farbschema: System', SystemIcon],
+  ['dark', 'Dunkler Modus', MoonIcon],
+];
 
 function ThemeToggle() {
   const { theme } = useSettings();
-  const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-  const isDark = theme === 'dark' || (theme === 'system' && systemDark);
+  const idx = THEME_OPTIONS.findIndex(([t]) => t === theme);
+  const [, currentLabel, CurrentIcon] = THEME_OPTIONS[idx];
+  const [next, nextLabel] = THEME_OPTIONS[(idx + 1) % THEME_OPTIONS.length];
   return (
-    <button
-      className="ghost"
-      onClick={() => updateSettings({ theme: isDark ? 'light' : 'dark' })}
-      aria-label={isDark ? 'Hellen Modus aktivieren' : 'Dunklen Modus aktivieren'}
-      title={isDark ? 'Heller Modus' : 'Dunkler Modus'}
-    >
-      {isDark ? '☀' : '☾'}
-    </button>
+    <>
+      <div className="segmented theme-switch" role="group" aria-label="Farbschema">
+        {THEME_OPTIONS.map(([t, label, Icon]) => (
+          <button key={t} aria-pressed={theme === t} aria-label={label} title={label} onClick={() => updateSettings({ theme: t })}>
+            <Icon />
+          </button>
+        ))}
+      </div>
+      {/* Bei wenig Platz: ein Button, der durch die Modi wechselt */}
+      <button
+        className="ghost theme-cycle"
+        aria-label={`${currentLabel} – wechseln zu: ${nextLabel}`}
+        title={`${currentLabel} (wechseln zu: ${nextLabel})`}
+        onClick={() => updateSettings({ theme: next })}
+      >
+        <CurrentIcon />
+      </button>
+    </>
   );
 }
 
@@ -58,6 +110,7 @@ export default function Layout() {
         </p>
       </footer>
       {isExercise && <AudioHint />}
+      <PianoDock />
       <WhatsNew />
     </>
   );

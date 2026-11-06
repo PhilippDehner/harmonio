@@ -86,7 +86,7 @@ export default function SettingsPage() {
         <div className="segmented" role="group" aria-label="Farbschema">
           {(
             [
-              ['system', 'wie System'],
+              ['system', 'System'],
               ['light', 'hell'],
               ['dark', 'dunkel'],
             ] as [ThemeSetting, string][]

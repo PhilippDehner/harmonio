@@ -148,3 +148,10 @@ export async function play(opts: PlayOptions): Promise<void> {
 export function transportSeconds(): number {
   return Tone.getTransport().seconds;
 }
+
+/** Plays a single key immediately (e.g. from the on-screen keyboard), independent of the transport. */
+export async function playKey(midi: number, duration = 1.5): Promise<void> {
+  await unlockAudio();
+  await ready();
+  sampler!.triggerAttackRelease(midiToFreq(midi), duration, Tone.now(), 0.8);
+}
