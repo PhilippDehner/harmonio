@@ -41,7 +41,7 @@ const SystemIcon = () => (
 
 const THEME_OPTIONS: [ThemeSetting, string, () => React.JSX.Element][] = [
   ['light', 'Heller Modus', SunIcon],
-  ['system', 'Farbschema wie System', SystemIcon],
+  ['system', 'Farbschema: System', SystemIcon],
   ['dark', 'Dunkler Modus', MoonIcon],
 ];
 
