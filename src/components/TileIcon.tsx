@@ -3,7 +3,7 @@ import { Formatter, Renderer, Stave, StaveConnector, StaveNote, Voice } from 've
 
 /** Kleine Notenbeispiele für die Kacheln der Startseite (VexFlow, folgt der Textfarbe). */
 
-export type TileIconKind = 'interval' | 'chord' | 'mono' | 'two' | 'four';
+export type TileIconKind = 'interval' | 'chord' | 'pitch' | 'mono' | 'two' | 'four';
 
 /** Ein Notenwert: Tonhöhen (VexFlow-Schreibweise) und Dauer. */
 type Ev = { keys: string[]; d: 'w' | 'q' };
@@ -17,6 +17,8 @@ const ICONS: Record<TileIconKind, Icon> = {
   interval: { treble: [w('g/4', 'd/5')] },
   // C-Dur-Akkord, Basston im Bassschlüssel
   chord: { treble: [w('e/4', 'g/4', 'c/5')], bass: [w('c/3')] },
+  // Stimmton a', danach ein vierstimmiger Akkord
+  pitch: { treble: [w('a/4'), w('c/5', 'e/5')], bass: [w('a/3'), w('a/2', 'e/3')] },
   // kurze Melodie
   mono: { treble: ['g/4', 'b/4', 'a/4', 'e/5', 'd/5'].map(q) },
   // zwei Stimmen auf zwei Systemen

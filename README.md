@@ -6,6 +6,7 @@ Webseite für Gehörbildungstraining mit Intervall-, Akkord- und Diktatübungen.
 
 - **Intervalle**: zufällige Intervalle (kleine Sekunde bis Oktave, optional bis zur Doppeloktave), gleichzeitig, aufwärts oder abwärts; optional Tonbenennung mit enharmonisch korrekter Schreibweise
 - **Akkorde**: vierstimmig im Chorsatz-Umfang, Dur/Moll/vermindert/übermäßig, optional mit Umkehrung und Tonbenennung
+- **Tonangabe**: vierstimmiger Dur-/Moll-Akkord (mit Umkehrungen) im Notenbild, dazu nur das A (440 Hz); die vier Töne werden von unten nach oben nachgesungen und per Mikrofon ausgewertet (Abweichung in Cent, Toleranz ±50 Cent, Oktave egal). Die Stimmlage (Männer-/Frauenstimme) wird beim ersten Mal über das nachgesungene A erkannt, bestätigt und in den Einstellungen gespeichert
 - **Diktate**: einstimmig, zweistimmig und vierstimmiger Satz aus einer MusicXML-Sammlung; Eingabe auf Papier, per Bildschirm-Klaviatur oder im Notenblatt; Auswertung mit Fehlern, Folgefehlern und Rhythmusfehlern
 - Statistik (pro Intervall/Akkord, Verwechslungen, Diktatversuche), Export/Import, adaptive Aufgabenauswahl
 - Light/Dark Mode, responsiv, als PWA installierbar und offline nutzbar

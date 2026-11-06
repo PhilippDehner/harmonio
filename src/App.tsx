@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import IntervalsPage from './pages/IntervalsPage';
 import ChordsPage from './pages/ChordsPage';
+import PitchGivingPage from './pages/PitchGivingPage';
 import DictationListPage from './pages/DictationListPage';
 import StatsPage from './pages/StatsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -27,6 +28,7 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="intervalle" element={<IntervalsPage />} />
           <Route path="akkorde" element={<ChordsPage />} />
+          <Route path="tonangabe" element={<PitchGivingPage />} />
           <Route path="diktat/:kind" element={<DictationListPage />} />
           <Route
             path="diktat/:kind/:id"

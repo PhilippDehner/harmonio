@@ -809,3 +809,38 @@ button.primary kbd.hint {
 .solution-score-title {
   margin-bottom: 2px;
 }
+
+/* Tonangabe */
+.voice-list {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.voice-list th,
+.voice-list td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.voice-list tr:last-child th,
+.voice-list tr:last-child td {
+  border-bottom: none;
+}
+
+.voice-list th {
+  width: 6em;
+  font-weight: 600;
+}
+
+.voice-list tr.current {
+  background: var(--accent-soft);
+}
+
+.voice-list tr.ok td {
+  color: var(--ok);
+}
+
+.voice-list tr.err td {
+  color: var(--err);
+}

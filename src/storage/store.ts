@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { DNote } from '../dictation/model';
 import type { IntervalPlayMode } from '../music/tasks';
+import type { VoiceType } from '../audio/pitchDetect';
 
 const PREFIX = 'harmonio:';
 
@@ -53,6 +54,8 @@ export interface Settings {
   autoNextWrong: boolean;
   /** Wartezeit in Sekunden für beide Fälle */
   autoNextSeconds: number;
+  /** Stimmlage für die Tonangabe; null = noch nicht erkannt */
+  voiceType: VoiceType | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -69,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoNextCorrect: false,
   autoNextWrong: false,
   autoNextSeconds: 2,
+  voiceType: null,
 };
 
 export const RANGES: Record<RangeLevel, { label: string; midi: [number, number]; text: string }> = {
@@ -351,8 +355,11 @@ export function mergeData(current: Omit<AppData, 'deviceId'>, incoming: ExportFi
     const lastAttempt = attempts.filter((a) => a.dictationId === id).pop();
     if (lastAttempt && lastAttempt.date > progress[id].updated) delete progress[id];
   }
+  const settings = { ...DEFAULT_SETTINGS, ...current.settings, ...(incoming.settings ?? {}) };
+  // Eine bereits erkannte Stimmlage nicht durch „nicht festgelegt“ überschreiben
+  settings.voiceType ??= current.settings.voiceType ?? null;
   return {
-    settings: { ...DEFAULT_SETTINGS, ...current.settings, ...(incoming.settings ?? {}) },
+    settings,
     stats,
     dictations: { attempts, progress },
     tours: Array.from(new Set([...current.tours, ...(incoming.tours ?? [])])),

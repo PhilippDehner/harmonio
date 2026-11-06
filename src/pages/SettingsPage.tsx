@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { VOICE_LABEL } from '../music/pitchGiving';
 import { RANGES, RangeLevel, ThemeSetting, exportData, importData, updateSettings, useSettings } from '../storage/store';
 
 async function shareOrDownload(): Promise<string> {
@@ -111,6 +112,26 @@ export default function SettingsPage() {
           />
           Sekunden
         </label>
+      </div>
+
+      <div className="card stack">
+        <h2 style={{ marginTop: 0 }}>Stimmlage (Tonangabe)</h2>
+        <p className="muted small" style={{ margin: 0 }}>
+          Bestimmt, in welcher Oktave du die Töne singst: Männer singen Sopran und Alt eine Oktave tiefer, Frauen Tenor
+          und Bass eine Oktave höher. „Neu erkennen“ startet beim nächsten Öffnen der Tonangabe die Erkennung per Mikrofon.
+        </p>
+        <div className="row">
+          <div className="segmented" role="group" aria-label="Stimmlage">
+            {(['mann', 'frau'] as const).map((v) => (
+              <button key={v} aria-pressed={settings.voiceType === v} onClick={() => updateSettings({ voiceType: v })}>
+                {VOICE_LABEL[v]}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => updateSettings({ voiceType: null })} disabled={settings.voiceType === null}>
+            Neu erkennen
+          </button>
+        </div>
       </div>
 
       <div className="card stack">
