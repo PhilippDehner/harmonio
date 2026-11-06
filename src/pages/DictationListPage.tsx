@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { KINDS, entriesOf, pickRandom } from '../dictation/catalog';
 import { DictationKind, KIND_LABELS } from '../dictation/model';
+import BetaBadge, { ChoraleBetaNotice } from '../components/BetaBadge';
 import { dictationStatus, useAppData } from '../storage/store';
 
 export default function DictationListPage() {
@@ -13,7 +14,11 @@ export default function DictationListPage() {
 
   return (
     <div className="stack">
-      <h1>{KIND_LABELS[kind]}</h1>
+      <h1>
+        {KIND_LABELS[kind]}
+        {kind === 'four-part' && <BetaBadge />}
+      </h1>
+      {kind === 'four-part' && <ChoraleBetaNotice />}
       <p className="muted">
         Wähle ein Diktat aus der Liste oder lass dir eines zufällig geben. Noch nicht gemachte Diktate werden dabei
         bevorzugt.

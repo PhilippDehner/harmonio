@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { isPlaying, onAudioState, play, stopAll, transportSeconds } from '../audio/engine';
+import BetaBadge, { ChoraleBetaNotice } from '../components/BetaBadge';
 import { useHotkeys } from '../components/hotkeys';
 import ScoreView from '../components/ScoreView';
 import { useTour } from '../components/Tour';
@@ -288,6 +289,7 @@ function DictationPage() {
       <div className="row">
         <h1 style={{ margin: 0 }}>
           {KIND_LABELS[d.kind]} {d.number}
+          {chorale && <BetaBadge />}
         </h1>
         <span className="spacer" />
         <Link className="btn" to={`/dictation/${kind}`}>
@@ -297,6 +299,7 @@ function DictationPage() {
           Hilfe
         </button>
       </div>
+      {chorale && <ChoraleBetaNotice />}
 
       <div className="card small">
         {!chorale && (
