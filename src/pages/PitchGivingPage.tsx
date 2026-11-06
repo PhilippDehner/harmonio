@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { isAudioRunning, play, stopAll, unlockAudio } from '../audio/engine';
 import { MicFrame, useMic } from '../audio/mic';
 import { PitchHold, VoiceType, classifyVoice, freqToMidi } from '../audio/pitchDetect';
@@ -27,7 +26,7 @@ import {
   sungStatus,
 } from '../music/pitchGiving';
 import { ChordTask } from '../music/tasks';
-import { updateSettings, useSettings } from '../storage/store';
+import { Settings, pitchGivingOptions, updateSettings, useSettings } from '../storage/store';
 
 const A4 = 69;
 /** Ignore the microphone this long after playback so the piano does not count as singing (ms). */
@@ -166,9 +165,66 @@ function VoiceSetup({ mic, handler, playA }: Shared) {
 
 type Results = (SungResult | null)[];
 
+/** Checkbox options; within each group at least one must stay checked. */
+const OPTION_GROUPS: { label: string; items: { key: keyof Settings; label: string; title: string }[] }[] = [
+  {
+    label: 'Vorzeichen',
+    items: [
+      { key: 'pgFewAccidentals', label: 'wenige', title: 'Tonarten mit bis zu 3 Vorzeichen' },
+      { key: 'pgManyAccidentals', label: 'viele', title: 'Tonarten mit 4 bis 7 Vorzeichen' },
+    ],
+  },
+  {
+    label: 'Tongeschlecht',
+    items: [
+      { key: 'pgMajor', label: 'Dur', title: 'Durakkorde' },
+      { key: 'pgMinor', label: 'Moll', title: 'Mollakkorde' },
+    ],
+  },
+];
+
+function PitchGivingOptionsBar() {
+  const settings = useSettings();
+  return (
+    <div id="tg-options" className="toolbar">
+      {OPTION_GROUPS.map((g) => {
+        const checkedCount = g.items.filter((it) => settings[it.key]).length;
+        return (
+          <div key={g.label} className="row" role="group" aria-label={g.label}>
+            <span className="muted small">{g.label}:</span>
+            {g.items.map((it) => {
+              const checked = settings[it.key] as boolean;
+              return (
+                <label key={it.key} className="toggle" title={it.title}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    // The last checked box of a group cannot be unchecked
+                    disabled={checked && checkedCount === 1}
+                    onChange={(e) => updateSettings({ [it.key]: e.target.checked })}
+                  />
+                  {it.label}
+                </label>
+              );
+            })}
+          </div>
+        );
+      })}
+      <label className="toggle" title="Ohne Haken: enge Lage der Oberstimmen und Töne in mittlerer Höhe (nahe am A)">
+        <input type="checkbox" checked={settings.pgWide} onChange={(e) => updateSettings({ pgWide: e.target.checked })} />
+        auch weite Lagen
+      </label>
+    </div>
+  );
+}
+
 function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: VoiceType }) {
   const settings = useSettings();
-  const [task, setTask] = useState<ChordTask>(() => makePitchGivingTask());
+  const options = pitchGivingOptions(settings);
+  const optionsKey = JSON.stringify(options);
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+  const [task, setTask] = useState<ChordTask>(() => makePitchGivingTask(options));
   const [results, setResults] = useState<Results>([null, null, null, null]);
   const [pos, setPos] = useState(0);
   const [live, setLive] = useState<number | null>(null);
@@ -185,6 +241,8 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const tour = useTour('pitch-giving', [
     { title: 'Tonangabe', text: `Du siehst einen vierstimmigen Akkord und hörst nur das A (${settings.tuningA4} Hz). Finde davon ausgehend die Töne des Akkords.` },
     { selector: '#tg-a', title: 'A abspielen', text: 'Spiele das A beliebig oft ab (Leertaste).' },
+    { selector: '#tg-options', title: 'Schwierigkeit', text: 'Wähle Tonarten mit wenigen oder vielen Vorzeichen, Dur und/oder Moll und ob auch weite Lagen mit Tönen weit weg vom A vorkommen.' },
+    { selector: '#tg-new', title: 'Neue Übung', text: 'Mit „Neue Übung“ (N) bekommst du jederzeit einen anderen Akkord. Übersprungene Akkorde zählen nicht in der Statistik.' },
     { selector: '#tg-voices', title: 'Singen', text: `Singe die vier Töne nacheinander ${SING_ORDERS.find((o) => o.id === settings.singOrder)!.text} und halte jeden kurz, bis er erkannt ist. Du musst nichts anklicken: Nach jedem erkannten Ton geht es automatisch mit der nächsten Stimme weiter. Setze zwischen den Tönen nur kurz ab. Die Reihenfolge wählst du oben unter „Reihenfolge“.` },
   ]);
 
@@ -221,12 +279,28 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const next = useCallback(() => {
     if (timer.current) window.clearTimeout(timer.current);
     stopAll();
-    setTask(makePitchGivingTask());
+    setTask(makePitchGivingTask(optionsRef.current));
     resetSinging();
     timer.current = window.setTimeout(() => {
       if (isAudioRunning()) playA();
     }, 1000);
   }, [playA, resetSinging]);
+
+  /** Skip the current chord after asking; skipped chords do not count. */
+  const skip = () => {
+    if (confirm('Diesen Akkord wirklich überspringen? Er zählt nicht in der Statistik.')) next();
+  };
+
+  // Difficulty changed: new chord matching the options
+  const firstOptions = useRef(true);
+  useEffect(() => {
+    if (firstOptions.current) {
+      firstOptions.current = false;
+      return;
+    }
+    next();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [optionsKey]);
 
   useEffect(() => {
     timer.current = window.setTimeout(() => {
@@ -252,6 +326,9 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     if (key === ' ') {
       e.preventDefault();
       playA();
+    } else if (!done && key.toUpperCase() === 'N') {
+      e.preventDefault();
+      skip();
     } else if (done && key === 'Enter') {
       e.preventDefault();
       next();
@@ -290,12 +367,6 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
       <BetaNotice />
 
       <div className="toolbar">
-        <span>
-          Stimmlage: <b>{VOICE_LABEL[voice]}</b>
-        </span>
-        <Link to="/settings" className="small">
-          ändern
-        </Link>
         <div className="segmented" role="group" aria-label="Reihenfolge">
           {SING_ORDERS.map((o) => (
             <button
@@ -317,6 +388,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
           Statistik
         </label>
       </div>
+      <PitchGivingOptionsBar />
 
       <div className="solution-scores">
         <SolutionScore
@@ -353,6 +425,11 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
           </button>
         )}
         {pos > 0 && <button onClick={resetSinging}>Neu singen</button>}
+        {!done && (
+          <button id="tg-new" onClick={skip} title="Anderen Akkord, zählt nicht in der Statistik">
+            Neue Übung <kbd className="hint">N</kbd>
+          </button>
+        )}
         {done && (
           <button onClick={next} autoFocus>
             Weiter{autoNextIn !== null && ` (${autoNextIn} s)`} <kbd className="hint">↵</kbd>

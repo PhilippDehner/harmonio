@@ -10,6 +10,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.4.0',
+    date: '2026-11-06',
+    changes: [
+      'Tonangabe: Schwierigkeit wählbar – Tonarten mit wenigen (bis 3) oder vielen Vorzeichen, Dur und/oder Moll, nur enge Lagen in mittlerer Höhe oder auch weite Lagen mit Tönen weit weg vom A. Standard: Dur, wenige Vorzeichen, enge Lagen.',
+      'Tonangabe: „Neue Übung“ (Taste N) gibt nach einer Rückfrage jederzeit einen anderen Akkord, ohne dass er in der Statistik zählt.',
+      'Tonangabe: Die Stimmlage steht nicht mehr über der Übung; sie lässt sich weiterhin in den Einstellungen ändern.',
+    ],
+  },
+  {
     version: '1.3.1',
     date: '2026-11-06',
     changes: ['Die Tonangabe ist als Beta gekennzeichnet: Sie wird noch erprobt, die Tonerkennung kann ungenau sein.'],
