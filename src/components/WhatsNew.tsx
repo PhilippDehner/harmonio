@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { APP_VERSION } from '../config';
-import { ChangelogEntry, changesSince, CHANGELOG } from '../changelog';
+import { ChangelogEntry, changesSince } from '../changelog';
 
 const KEY = 'harmonio:lastSeenVersion';
 /** Version assumed for users who used the app before the changelog existed. */
@@ -102,7 +102,7 @@ export default function WhatsNew() {
   );
 }
 
-/** Footer button that opens the full changelog. */
+/** Footer button that opens the changelog (latest releases). */
 export function ChangelogButton() {
   const [open, setOpen] = useState(false);
   return (
@@ -110,7 +110,7 @@ export function ChangelogButton() {
       <button className="link-button" onClick={() => setOpen(true)}>
         Neuigkeiten
       </button>
-      {open && <ChangelogDialog entries={CHANGELOG} title="Neuigkeiten" onClose={() => setOpen(false)} />}
+      {open && <ChangelogDialog entries={changesSince(null)} title="Neuigkeiten" onClose={() => setOpen(false)} />}
     </>
   );
 }

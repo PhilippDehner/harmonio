@@ -1,6 +1,7 @@
 /**
  * User-facing changelog (German, shown in the app). Newest version first.
- * Add an entry here whenever the version in package.json is raised.
+ * Lists new features only (no fixes or small adjustments). Add an entry when a
+ * release brings new features; releases without new features get no entry.
  */
 export interface ChangelogEntry {
   version: string;
@@ -17,26 +18,12 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
   },
   {
-    version: '1.4.1',
-    date: '2026-11-06',
-    changes: [
-      'Tonangabe: Der Akkord steht mit der Vorzeichnung seiner Tonart statt mit Versetzungszeichen vor den Noten.',
-      'Tonangabe: Die Einstellungen Vorzeichen, Tongeschlecht und Lage sind als getrennte Gruppen umrandet.',
-    ],
-  },
-  {
     version: '1.4.0',
     date: '2026-11-06',
     changes: [
       'Tonangabe: Schwierigkeit wählbar – Tonarten mit wenigen (bis 3) oder vielen Vorzeichen, Dur und/oder Moll, nur enge Lagen in mittlerer Höhe oder auch weite Lagen mit Tönen weit weg vom A. Standard: Dur, wenige Vorzeichen, enge Lagen.',
       'Tonangabe: „Neue Übung“ (Taste N) gibt nach einer Rückfrage jederzeit einen anderen Akkord, ohne dass er in der Statistik zählt.',
-      'Tonangabe: Die Stimmlage steht nicht mehr über der Übung; sie lässt sich weiterhin in den Einstellungen ändern.',
     ],
-  },
-  {
-    version: '1.3.1',
-    date: '2026-11-06',
-    changes: ['Die Tonangabe ist als Beta gekennzeichnet: Sie wird noch erprobt, die Tonerkennung kann ungenau sein.'],
   },
   {
     version: '1.3.0',
@@ -63,17 +50,12 @@ export const CHANGELOG: ChangelogEntry[] = [
     changes: [
       'Neuigkeiten: Nach einem Update zeigt Harmonio beim Öffnen, was sich geändert hat.',
       'Versionsnummer im Fußbereich der Seite.',
-      'Die Adressen der Seiten haben sich geändert. Alte Lesezeichen auf einzelne Übungen bitte neu setzen.',
       'Diktat-Editor: Rückgängig (Strg+Z) mit mehrstufigem Verlauf.',
       'Diktat-Editor: Tastenkürzel für Tonhöhe, Vorzeichen, Notenwert und Bearbeiten.',
       'Diktat-Editor: Pausen füllen Lücken, Notendauer nachträglich änderbar.',
       'Intervalle und Akkorde: Lösung wird als Notenbild angezeigt, falsche Antwort lässt sich anhören.',
       'Automatisch weiter nach richtiger oder falscher Antwort (in den Einstellungen).',
-      'Akkorde: Typ und Umkehrung als Standard-Stufe.',
-      'Kadenz vor dem Diktat schneller und mit festen Lagen.',
-      'Zweistimmiges Diktat: Oberstimme tiefer.',
       'Startseite: Notenbeispiele auf den Übungskacheln.',
-      'Kleinere Korrekturen, u. a. Ziffernblock unabhängig von NumLock und keine Schnellsuche mehr in Firefox.',
     ],
   },
   {
@@ -94,7 +76,13 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-/** Entries newer than `lastSeen` (all entries if `lastSeen` is null). */
+/** Maximum number of releases shown in the app. */
+export const MAX_SHOWN_RELEASES = 3;
+
+/** Newest entries newer than `lastSeen` (all if `lastSeen` is null), at most MAX_SHOWN_RELEASES. */
 export function changesSince(lastSeen: string | null): ChangelogEntry[] {
-  return CHANGELOG.filter((e) => lastSeen === null || compareVersions(e.version, lastSeen) > 0);
+  return CHANGELOG.filter((e) => lastSeen === null || compareVersions(e.version, lastSeen) > 0).slice(
+    0,
+    MAX_SHOWN_RELEASES,
+  );
 }
