@@ -140,6 +140,8 @@ export default function IntervalsPage() {
 
   function answer(iv: IntervalDef) {
     if (phase !== 'answer') return;
+    // Ausstehende automatische Wiedergabe abbrechen, sonst überdeckt sie später „Deine Antwort“.
+    if (autoPlayTimer.current) window.clearTimeout(autoPlayTimer.current);
     stopAll();
     const correct = iv.id === task.interval.id;
     setGiven(iv.id);
