@@ -536,9 +536,24 @@ input[type='number']:disabled {
 }
 
 .live-stats {
-  display: flex;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: start;
+  column-gap: 16px;
+  row-gap: 2px;
   font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.live-stats-line {
+  display: contents;
+}
+
+@media (max-width: 480px) {
+  .live-stats {
+    column-gap: 10px;
+    font-size: 0.85rem;
+  }
 }
 
 .live-stats b {

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import type { DNote } from '../dictation/model';
 import type { IntervalPlayMode } from '../music/tasks';
 import type { VoiceType } from '../audio/pitchDetect';
@@ -144,13 +144,19 @@ export interface DeviceStats {
   /** level ("1" | "2") → chord ID → counts */
   chords: Record<string, Record<string, Counts>>;
   naming: { intervals: Counts; chords: Counts };
+  /** Pitch giving: chord type ("major" | "minor") → counts (missing in older data) */
+  pitchGiving?: Record<string, Counts>;
 }
+
+/** Exercises with a live counter. */
+export type ExerciseKind = 'intervals' | 'chords' | 'pitchGiving';
 
 function emptyDeviceStats(): DeviceStats {
   return {
     updated: 0,
     intervals: {},
     chords: {},
+    pitchGiving: {},
     naming: { intervals: { correct: 0, wrong: 0 }, chords: { correct: 0, wrong: 0 } },
   };
 }
@@ -297,6 +303,13 @@ export function recordChord(level: string, chordId: string, correct: boolean, gi
   saveMyStats({ ...s, chords: { ...s.chords, [level]: bucket } });
 }
 
+export function recordPitchGiving(chordType: string, correct: boolean) {
+  const s = myStats();
+  const bucket = { ...(s.pitchGiving ?? {}) };
+  bucket[chordType] = bump(bucket[chordType], correct);
+  saveMyStats({ ...s, pitchGiving: bucket });
+}
+
 export function recordNaming(kind: 'intervals' | 'chords', correct: boolean) {
   const s = myStats();
   saveMyStats({ ...s, naming: { ...s.naming, [kind]: bump(s.naming[kind], correct) } });
@@ -318,9 +331,56 @@ export function aggregateStats(all: Record<string, DeviceStats>): DeviceStats {
   for (const s of Object.values(all)) {
     for (const [mode, b] of Object.entries(s.intervals)) add((out.intervals[mode] ??= {}), b);
     for (const [lvl, b] of Object.entries(s.chords)) add((out.chords[lvl] ??= {}), b);
+    add((out.pitchGiving ??= {}), s.pitchGiving ?? {});
     add(out.naming as unknown as Record<string, Counts>, s.naming as unknown as Record<string, Counts>);
   }
   return out;
+}
+
+/** All-time counts of an exercise (all modes/levels, all devices; without note naming). */
+export function totalCounts(all: Record<string, DeviceStats>, kind: ExerciseKind): { correct: number; wrong: number } {
+  const s = aggregateStats(all);
+  const buckets =
+    kind === 'pitchGiving' ? [s.pitchGiving ?? {}] : Object.values(kind === 'intervals' ? s.intervals : s.chords);
+  const out = { correct: 0, wrong: 0 };
+  for (const b of buckets)
+    for (const c of Object.values(b)) {
+      out.correct += c.correct;
+      out.wrong += c.wrong;
+    }
+  return out;
+}
+
+/**
+ * Counter for the current session: survives page changes and reloads, starts at
+ * zero in a new browser tab/session (sessionStorage).
+ */
+export function useSessionCounter(kind: ExerciseKind) {
+  const key = `${PREFIX}session:${kind}`;
+  const [counts, setCounts] = useState<{ correct: number; wrong: number }>(() => {
+    try {
+      const raw = sessionStorage.getItem(key);
+      const c = raw ? JSON.parse(raw) : null;
+      if (c && Number.isFinite(c.correct) && Number.isFinite(c.wrong)) return { correct: c.correct, wrong: c.wrong };
+    } catch {
+      /* unavailable */
+    }
+    return { correct: 0, wrong: 0 };
+  });
+  const add = useCallback(
+    (correct: boolean) =>
+      setCounts((c) => {
+        const next = { correct: c.correct + (correct ? 1 : 0), wrong: c.wrong + (correct ? 0 : 1) };
+        try {
+          sessionStorage.setItem(key, JSON.stringify(next));
+        } catch {
+          /* unavailable */
+        }
+        return next;
+      }),
+    [key],
+  );
+  return [counts, add] as const;
 }
 
 export function resetStats(kind: 'exercises' | 'dictations' | 'all') {

@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.8.0',
+    date: '2026-11-06',
+    changes: [
+      'Der Zähler in Intervallen, Akkorden und Tonangabe zeigt jetzt „Sitzung“ und „Gesamt“. Die Sitzung bleibt beim Seitenwechsel und Neuladen erhalten und beginnt erst in einem neuen Browser-Tab wieder bei null.',
+      'Tonangabe: Ergebnisse werden dauerhaft gespeichert und in der Statistik angezeigt (nach Dur- und Mollakkorden).',
+    ],
+  },
+  {
     version: '1.7.0',
     date: '2026-11-06',
     changes: [

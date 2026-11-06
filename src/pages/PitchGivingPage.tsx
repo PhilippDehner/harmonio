@@ -31,8 +31,10 @@ import {
   Settings,
   loadPitchGivingCurrent,
   pitchGivingOptions,
+  recordPitchGiving,
   savePitchGivingCurrent,
   updateSettings,
+  useSessionCounter,
   useSettings,
 } from '../storage/store';
 
@@ -255,7 +257,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const [results, setResults] = useState<Results>(saved?.results ?? [null, null, null, null]);
   const [pos, setPos] = useState(saved?.pos ?? 0);
   const [live, setLive] = useState<number | null>(null);
-  const [session, setSession] = useState({ correct: 0, wrong: 0 });
+  const [session, addSession] = useSessionCounter('pitchGiving');
   const hold = useRef(new PitchHold());
   const posRef = useRef(saved?.pos ?? 0);
   const resultsRef = useRef<Results>(saved?.results ?? [null, null, null, null]);
@@ -293,7 +295,8 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     if (finished && !counted.current) {
       counted.current = true;
       const ok = !firstTryFailed.current && updated.every((x) => x?.octaveOk);
-      setSession((s) => ({ correct: s.correct + (ok ? 1 : 0), wrong: s.wrong + (ok ? 0 : 1) }));
+      addSession(ok);
+      recordPitchGiving(task.type, ok);
     }
     setPos(posRef.current);
     setLive(null);
@@ -502,7 +505,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
           </button>
         )}
         <span className="spacer" />
-        {settings.showStats && <LiveStats {...session} />}
+        {settings.showStats && <LiveStats kind="pitchGiving" session={session} />}
       </div>
 
       {mic.error && (

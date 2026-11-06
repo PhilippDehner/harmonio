@@ -26,6 +26,7 @@ import {
   recordNaming,
   updateSettings,
   useAppData,
+  useSessionCounter,
 } from '../storage/store';
 
 const MODES: { id: IntervalPlayMode; label: string }[] = [
@@ -58,7 +59,7 @@ export default function IntervalsPage() {
   const [phase, setPhase] = useState<Phase>('answer');
   const [given, setGiven] = useState<string | null>(null);
   const [namingResult, setNamingResult] = useState<{ correct: boolean; solution: string } | null>(null);
-  const [session, setSession] = useState({ correct: 0, wrong: 0 });
+  const [session, addSession] = useSessionCounter('intervals');
   const bufferRef = useRef('');
   const autoPlayTimer = useRef<number | null>(null);
   const intervals = useMemo(() => availableIntervals(settings.intervalExtended), [settings.intervalExtended]);
@@ -147,7 +148,7 @@ export default function IntervalsPage() {
     const correct = iv.id === task.interval.id;
     setGiven(iv.id);
     recordInterval(mode, task.interval.id, correct, correct ? undefined : iv.id);
-    setSession((s) => ({ correct: s.correct + (correct ? 1 : 0), wrong: s.wrong + (correct ? 0 : 1) }));
+    addSession(correct);
     setPhase(correct && settings.intervalNaming ? 'naming' : 'done');
   }
 
@@ -269,7 +270,7 @@ export default function IntervalsPage() {
           </button>
         )}
         <span className="spacer" />
-        {settings.showStats && <LiveStats {...session} />}
+        {settings.showStats && <LiveStats kind="intervals" session={session} />}
       </div>
 
       <div id="iv-answers" className="answer-grid" role="group" aria-label="Intervall auswählen">

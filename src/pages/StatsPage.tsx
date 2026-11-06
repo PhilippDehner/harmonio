@@ -46,6 +46,15 @@ export default function StatsPage() {
         <DetailTable bucket={s.chords['2']} items={level2} labelOf={chordLabel} />
       </details>
 
+      <h2>Tonangabe</h2>
+      <div className="card">
+        <DetailTable
+          bucket={s.pitchGiving}
+          items={['major', 'minor']}
+          labelOf={(id) => (id === 'major' ? 'Durakkorde' : 'Mollakkorde')}
+        />
+      </div>
+
       <h2>Tonbenennung</h2>
       <div className="card">
         <table className="stats">
@@ -112,7 +121,7 @@ export default function StatsPage() {
       <h2>Daten löschen</h2>
       <div className="row">
         <button
-          onClick={() => confirm('Statistik der Intervalle und Akkorde löschen?') && resetStats('exercises')}
+          onClick={() => confirm('Statistik der Intervalle, Akkorde und Tonangabe löschen?') && resetStats('exercises')}
         >
           Übungsstatistik löschen
         </button>
