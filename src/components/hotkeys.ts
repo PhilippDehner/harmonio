@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Taste vereinheitlichen: Ziffernblock-Ziffern liefern unabhängig von NumLock
- * die Ziffer, Ziffernblock-Enter liefert 'Enter'.
+ * Normalize a key: numpad digits yield the digit regardless of NumLock,
+ * numpad Enter yields 'Enter'.
  */
 export function normalizedKey(e: KeyboardEvent): string {
   const m = /^Numpad(\d)$/.exec(e.code);
@@ -11,7 +11,7 @@ export function normalizedKey(e: KeyboardEvent): string {
   return e.key;
 }
 
-/** Tastatur-Handler, der Eingaben in Formularfeldern ignoriert. */
+/** Keyboard handler that ignores input in form fields. */
 export function useHotkeys(handler: (e: KeyboardEvent, key: string) => void, enabled = true) {
   const ref = useRef(handler);
   ref.current = handler;

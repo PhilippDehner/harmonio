@@ -35,9 +35,9 @@ Technik: React, Vite, TypeScript, Tone.js (Klang), VexFlow (Notensatz), vite-plu
 
 MusicXML-Dateien (`.musicxml` oder `.xml`) in den passenden Ordner legen:
 
-- `diktate/einstimmig/`
-- `diktate/zweistimmig/`
-- `diktate/vierstimmig/` (Typ A und Typ B gemeinsam)
+- `dictations/monophonic/`
+- `dictations/two-part/`
+- `dictations/four-part/` (Typ A und Typ B gemeinsam)
 
 Die Liste wird beim Build automatisch erzeugt. Die Nummer des Diktats ergibt sich aus der ersten Zahl im Dateinamen (z. B. `07.musicxml` → Diktat 7).
 

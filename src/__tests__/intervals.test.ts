@@ -5,8 +5,8 @@ import { makeIntervalTask, adaptiveWeight, chooseAdaptive } from '../music/tasks
 
 const P = (step: number, alter: number, octave: number) => ({ step, alter, octave });
 
-describe('Notennamen', () => {
-  it('nutzt deutsche Namen mit H und B', () => {
+describe('Note names', () => {
+  it('uses German names with H and B', () => {
     expect(germanName({ step: 6, alter: 0 })).toBe('H');
     expect(germanName({ step: 6, alter: -1 })).toBe('B');
     expect(germanName({ step: 6, alter: -2 })).toBe('Heses');
@@ -17,7 +17,7 @@ describe('Notennamen', () => {
     expect(germanName({ step: 3, alter: 2 })).toBe('Fisis');
     expect(germanName({ step: 1, alter: -1 })).toBe('Des');
   });
-  it('Tonarten', () => {
+  it('keys', () => {
     expect(keyAlter(3, 1)).toBe(1);
     expect(keyAlter(6, -1)).toBe(-1);
     expect(germanName(keyTonic(-2, false))).toBe('B');
@@ -25,38 +25,38 @@ describe('Notennamen', () => {
   });
 });
 
-describe('Intervall-Schreibweise', () => {
-  it('von A aus große Terz = Cis', () => {
+describe('Interval spelling', () => {
+  it('major third above A = C sharp', () => {
     expect(germanName(transpose(P(5, 0, 4), 2, 4))).toBe('Cis');
   });
-  it('von Dis aus große Terz = Fisis', () => {
+  it('major third above D sharp = F double sharp', () => {
     expect(germanName(transpose(P(1, 1, 4), 2, 4))).toBe('Fisis');
   });
-  it('abwärts: von C aus kleine Terz = A', () => {
+  it('descending: minor third below C = A', () => {
     const r = transpose(P(0, 0, 5), 2, 3, false);
     expect(germanName(r)).toBe('A');
     expect(r.octave).toBe(4);
   });
-  it('Oktavwechsel aufwärts', () => {
+  it('octave change ascending', () => {
     const r = transpose(P(6, 0, 4), 1, 1);
     expect(r).toEqual(P(0, 0, 5));
   });
-  it('Tritonus: beide Schreibweisen richtig', () => {
-    const tt = intervalById('tt');
+  it('tritone: both spellings are correct', () => {
+    const tt = intervalById('TT');
     expect(isCorrectNaming({ step: 3, alter: 1 }, P(0, 0, 4), tt, true)).toBe(true);
     expect(isCorrectNaming({ step: 4, alter: -1 }, P(0, 0, 4), tt, true)).toBe(true);
     expect(isCorrectNaming({ step: 4, alter: 0 }, P(0, 0, 4), tt, true)).toBe(false);
   });
-  it('enharmonisch falsch ist falsch', () => {
-    expect(isCorrectNaming({ step: 1, alter: -1 }, P(5, 0, 4), intervalById('g3'), true)).toBe(false);
+  it('enharmonically wrong is wrong', () => {
+    expect(isCorrectNaming({ step: 1, alter: -1 }, P(5, 0, 4), intervalById('M3'), true)).toBe(false);
   });
 });
 
-describe('Aufgaben', () => {
-  it('bleibt im Tonumfang und hat korrekte Halbtöne', () => {
+describe('Tasks', () => {
+  it('stays within the range and has correct semitones', () => {
     for (let i = 0; i < 300; i++) {
-      for (const mode of ['harmonisch', 'aufwaerts', 'abwaerts'] as const) {
-        const iv = intervalById(['k2', 'tt', 'r8', 'g7'][i % 4]);
+      for (const mode of ['harmonic', 'ascending', 'descending'] as const) {
+        const iv = intervalById(['m2', 'TT', 'P8', 'M7'][i % 4]);
         const t = makeIntervalTask(iv, mode, [60, 72]);
         const a = toMidi(t.start);
         const b = toMidi(t.second);
@@ -65,11 +65,11 @@ describe('Aufgaben', () => {
         expect(Math.max(a, b)).toBeLessThanOrEqual(72);
         expect(Math.abs(t.start.alter)).toBeLessThanOrEqual(1);
         expect(Math.abs(t.second.alter)).toBeLessThanOrEqual(2);
-        if (mode === 'abwaerts') expect(b).toBeLessThan(a);
+        if (mode === 'descending') expect(b).toBeLessThan(a);
       }
     }
   });
-  it('adaptive Gewichte bevorzugen häufige Fehler', () => {
+  it('adaptive weights prefer frequent errors', () => {
     expect(adaptiveWeight({ correct: 0, wrong: 10 })).toBeGreaterThan(adaptiveWeight({ correct: 10, wrong: 0 }));
     let n = 0;
     for (let i = 0; i < 2000; i++) {
@@ -79,13 +79,13 @@ describe('Aufgaben', () => {
   });
 });
 
-describe('Tastenkürzel', () => {
-  it('erkennt Kürzel', () => {
-    expect(intervalFromShortcut('3k', false)?.id).toBe('k3');
-    expect(intervalFromShortcut('4', false)?.id).toBe('r4');
-    expect(intervalFromShortcut('t', false)?.id).toBe('tt');
+describe('Keyboard shortcuts', () => {
+  it('recognizes shortcuts', () => {
+    expect(intervalFromShortcut('3k', false)?.id).toBe('m3');
+    expect(intervalFromShortcut('4', false)?.id).toBe('P4');
+    expect(intervalFromShortcut('t', false)?.id).toBe('TT');
     expect(intervalFromShortcut('10g', false)).toBeUndefined();
-    expect(intervalFromShortcut('10g', true)?.id).toBe('g10');
+    expect(intervalFromShortcut('10g', true)?.id).toBe('M10');
     expect(isShortcutPrefix('1', true)).toBe(true);
     expect(isShortcutPrefix('4', false)).toBe(false);
   });

@@ -19,7 +19,7 @@ export type Clef = 'treble' | 'bass';
 
 export interface StaffDef {
   clef: Clef;
-  /** Indizes der Stimmen auf diesem System (mehrere = Akkord) */
+  /** Indices of the voices on this staff (several = chord) */
   voices: number[];
 }
 
@@ -39,7 +39,7 @@ export interface RenderInput {
   voices: DNote[][];
   fromMeasure: number;
   toMeasure: number;
-  /** Breite in Bildschirmpixeln */
+  /** Width in screen pixels */
   width: number;
   scale: number;
   noteStyles?: Record<string, NoteStyle>;
@@ -47,16 +47,16 @@ export interface RenderInput {
   activeStaff?: number;
   cursor?: { staff: number; tick: number } | null;
   highlightMeasure?: number | null;
-  /** Auch die letzte Zeile auf volle Breite strecken */
+  /** Stretch the last line to full width too */
   fill?: boolean;
-  /** Feste Breite pro Takt-Einheit (proportional zur Dauer) */
+  /** Fixed width per measure unit (proportional to duration) */
   pxPerQuarter?: number;
-  /** Lücken (auch leere Takte) mit Pausen füllen */
+  /** Fill gaps (including empty measures) with rests */
   fillRests?: boolean;
 }
 
 export interface StaffLayout {
-  /** y der obersten Notenlinie (Bildschirmpixel) */
+  /** y of the top staff line (screen pixels) */
   topLine: number;
   lineSpacing: number;
   clef: Clef;
@@ -66,7 +66,7 @@ export interface StaffLayout {
 
 export interface MeasureLayout {
   index: number;
-  /** Notenbereich (Bildschirmpixel) */
+  /** Note area (screen pixels) */
   x0: number;
   x1: number;
   left: number;
@@ -88,18 +88,18 @@ function vexDuration(d: Duration, rest = false): string {
   return d.base + (rest ? 'r' : '');
 }
 
-/** Lage der Pause im System (Ganze hängt an der 4. Linie). */
+/** Position of the rest on the staff (whole rest hangs from the 4th line). */
 function restKey(clef: Clef, d: Duration): string {
   if (clef === 'treble') return d.base === 'w' ? 'd/5' : 'b/4';
   return d.base === 'w' ? 'f/3' : 'd/3';
 }
 
-/** Diatonischer Index der obersten Linie */
+/** Diatonic index of the top line */
 function topLineIndex(clef: Clef): number {
   return clef === 'treble' ? diatonicIndex({ step: 3, octave: 5 }) : diatonicIndex({ step: 5, octave: 3 });
 }
 
-/** Tonhöhe (ohne Vorzeichen) aus y-Koordinate. */
+/** Pitch (without accidental) from y coordinate. */
 export function pitchFromY(staff: StaffLayout, y: number): Pitch {
   const halfSteps = Math.round((y - staff.topLine) / (staff.lineSpacing / 2));
   return fromDiatonicIndex(topLineIndex(staff.clef) - halfSteps, 0);
@@ -115,8 +115,8 @@ function getCssColor(el: HTMLElement, name: string, fallback: string) {
 }
 
 /**
- * Zeichnet Takte proportional zur Dauer: Die x-Position einer Note entspricht
- * ihrem Einsatz im Takt. So lassen sich Klicks direkt Zeitpunkten zuordnen.
+ * Draws measures proportionally to duration: the x position of a note
+ * corresponds to its onset in the measure, so clicks map directly to times.
  */
 export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
   el.innerHTML = '';
@@ -132,7 +132,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
   const keySpec = keySignatureName(input.keyFifths);
   const timeSpec = `${input.beats}/${input.beatType}`;
 
-  // Systeme (Zeilen) bilden
+  // Build systems (lines)
   type Sys = { measures: { index: number; width: number }[] };
   const systems: Sys[] = [];
   let cur: Sys = { measures: [] };
@@ -168,7 +168,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
   const layout: ScoreLayout = { measures: [], height: height * scale, notes: [] };
 
   systems.forEach((sys, sIndex) => {
-    // Takte auf volle Breite strecken (außer bei sehr kurzer letzter Zeile)
+    // Stretch measures to full width (except for a very short last line)
     const total = sys.measures.reduce((a, b) => a + b.width, 0);
     const isLast = sIndex === systems.length - 1;
     const stretch = input.fill || !isLast || total > logicalWidth * 0.6 ? (logicalWidth - 2) / total : 1;
@@ -226,7 +226,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
 
         const xForTick = (tick: number) => noteStart + ((tick - m.start) / m.ticks) * (noteEnd - noteStart);
 
-        // Noten dieses Systems im Takt, nach Einsatz gruppiert (Akkorde)
+        // Notes of this staff in the measure, grouped by onset (chords)
         const notes = staffDef.voices
           .flatMap((v) => input.voices[v] ?? [])
           .filter((n) => n.start >= m.start && n.start < m.start + m.ticks);
@@ -237,7 +237,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
           groups.set(n.start, g);
         }
         const starts = Array.from(groups.keys()).sort((a, b) => a - b);
-        // Versetzungszeichen
+        // Accidentals
         const seq: { note: DNote }[] = [];
         starts.forEach((s) => {
           const g = groups.get(s)!.sort((a, b) => toMidi(a.pitch) - toMidi(b.pitch));
@@ -343,7 +343,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
           try {
             tuplets.push(new Tuplet(r, { num_notes: 3, notes_occupied: 2, bracketed: true }));
           } catch {
-            /* ignorieren */
+            /* ignore */
           }
         }
         let beams: Beam[] = [];
@@ -365,18 +365,18 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
           try {
             b.setContext(ctx).draw();
           } catch {
-            /* ignorieren */
+            /* ignore */
           }
         }
         for (const t of tuplets) {
           try {
             t.setContext(ctx).draw();
           } catch {
-            /* ignorieren */
+            /* ignore */
           }
         }
 
-        // Eingabeposition
+        // Insert position
         if (input.cursor && input.cursor.staff === sIdx && input.cursor.tick >= m.start && input.cursor.tick < m.start + m.ticks) {
           const cx = xForTick(input.cursor.tick);
           ctx.save();
@@ -392,7 +392,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
           new StaveConnector(top, bottom).setType('brace').setContext(ctx).draw();
           new StaveConnector(top, bottom).setType('singleLeft').setContext(ctx).draw();
         } catch {
-          /* ignorieren */
+          /* ignore */
         }
       }
       x += w;
@@ -403,7 +403,7 @@ export function renderScore(el: HTMLElement, input: RenderInput): ScoreLayout {
   return layout;
 }
 
-/** VexFlow-Tonartbezeichnung aus Quintenzirkel-Position. */
+/** VexFlow key name from circle-of-fifths position. */
 export function keySignatureName(fifths: number): string | null {
   const sharps = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'];
   const flats = ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'];
@@ -411,7 +411,7 @@ export function keySignatureName(fifths: number): string | null {
   return fifths > 0 ? sharps[fifths] : flats[-fifths];
 }
 
-/** Ordnet einen Klick einem Takt, System, Zeitpunkt und einer Tonhöhe zu. */
+/** Maps a click to a measure, staff, time and pitch. */
 export function hitTest(
   layout: ScoreLayout,
   measures: Measure[],

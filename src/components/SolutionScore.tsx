@@ -8,14 +8,14 @@ const WHOLE: Duration = { base: 'w', dotted: false, triplet: false };
 const TICKS = 96;
 
 type Props = {
-  /** Zeitlich aufeinanderfolgende Klänge; jeder Klang besteht aus einer oder mehreren Tonhöhen. */
+  /** Sounds in temporal order; each sound consists of one or more pitches. */
   sounds: Pitch[][];
-  /** Feste Zuordnung: Stimmen 0–1 im Violin-, 2–3 im Bassschlüssel (vierstimmiger Satz). */
+  /** Fixed assignment: voices 0–1 in treble, 2–3 in bass clef (four-part chorale). */
   satb?: boolean;
   ariaLabel: string;
 };
 
-/** Notenbild der Lösung (ganze Noten, ohne Takt- und Tonartangabe). */
+/** Score of the solution (whole notes, without time and key signature). */
 export default function SolutionScore({ sounds, satb, ariaLabel }: Props) {
   const input = useMemo(() => {
     const measures: Measure[] = [{ start: 0, ticks: TICKS * Math.max(1, sounds.length) }];
@@ -31,7 +31,7 @@ export default function SolutionScore({ sounds, satb, ariaLabel }: Props) {
         sounds.flatMap((s, i) => (s[v] ? [{ id: `${i}-${v}`, start: i * TICKS, dur: WHOLE, pitch: s[v] }] : [])),
       );
     } else {
-      // Schlüsselwahl nach Tonumfang; bei großem Umfang Klaviersystem (Trennung bei c')
+      // Choose clef by range; for a wide range use a grand staff (split at c')
       const lo = Math.min(...all);
       const hi = Math.max(...all);
       const split = lo < 57 && hi > 64;

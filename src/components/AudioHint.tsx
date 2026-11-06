@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { isAudioRunning, onAudioState, unlockAudio } from '../audio/engine';
 
 /**
- * Browser geben Audio erst nach einer Nutzeraktion frei. Beim Klick auf eine
- * Kachel passiert das automatisch; nach Neuladen oder Direktlink erscheint
- * dieser Hinweis, und der erste Tipp irgendwo schaltet den Ton frei.
+ * Browsers only allow audio after a user interaction. Clicking a tile does
+ * this automatically; after a reload or a direct link this hint appears, and
+ * the first tap anywhere unlocks audio.
  */
 export default function AudioHint() {
   const [running, setRunning] = useState(isAudioRunning());

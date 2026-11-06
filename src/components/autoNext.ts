@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useSettings } from '../storage/store';
 
 /**
- * Geht nach einstellbarer Wartezeit automatisch zur nächsten Aufgabe,
- * sobald eine Aufgabe abgeschlossen ist (je nach Einstellung für richtig/falsch).
- * Liefert die verbleibenden Sekunden oder null, wenn kein Countdown läuft.
+ * Automatically advances to the next task after a configurable delay once a
+ * task is finished (depending on the settings for correct/wrong answers).
+ * Returns the remaining seconds, or null if no countdown is running.
  */
 export function useAutoNext(done: boolean, correct: boolean, next: () => void): number | null {
   const settings = useSettings();

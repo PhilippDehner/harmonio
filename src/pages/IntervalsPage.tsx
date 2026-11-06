@@ -28,9 +28,9 @@ import {
 } from '../storage/store';
 
 const MODES: { id: IntervalPlayMode; label: string }[] = [
-  { id: 'harmonisch', label: 'gleichzeitig' },
-  { id: 'aufwaerts', label: 'aufwärts' },
-  { id: 'abwaerts', label: 'abwärts' },
+  { id: 'harmonic', label: 'gleichzeitig' },
+  { id: 'ascending', label: 'aufwärts' },
+  { id: 'descending', label: 'abwärts' },
 ];
 
 type Phase = 'answer' | 'naming' | 'done';
@@ -62,7 +62,7 @@ export default function IntervalsPage() {
   const autoPlayTimer = useRef<number | null>(null);
   const intervals = useMemo(() => availableIntervals(settings.intervalExtended), [settings.intervalExtended]);
 
-  const tour = useTour('intervalle', [
+  const tour = useTour('intervals', [
     { title: 'Intervalle', text: 'Hier hörst du zufällige Intervalle und bestimmst sie. Die Übung läuft, bis du sie verlässt.' },
     { selector: '#iv-mode', title: 'Wiedergabe', text: 'Wähle, ob die Töne gleichzeitig, aufwärts oder abwärts erklingen.' },
     { selector: '#iv-play', title: 'Abspielen', text: 'Spiele die Aufgabe beliebig oft ab (Leertaste).' },
@@ -73,20 +73,20 @@ export default function IntervalsPage() {
   const playTask = useCallback((t: IntervalTask) => {
     const a = toMidi(t.start);
     const b = toMidi(t.second);
-    if (getState().settings.intervalMode === 'harmonisch') {
+    if (getState().settings.intervalMode === 'harmonic') {
       void play({ sounds: [{ time: 0, midi: [a, b] }] });
     } else {
       void play({ sounds: [{ time: 0, midi: [a] }, { time: 1.0, midi: [b] }] });
     }
   }, []);
 
-  // Falsche Antwort vom selben Ausgangston abspielen
+  // Play the wrong answer from the same starting note
   const playGiven = useCallback(() => {
     if (!given) return;
     const a = toMidi(task.start);
     const b = a + (task.up ? 1 : -1) * intervalById(given).semitones;
     stopAll();
-    if (getState().settings.intervalMode === 'harmonisch') {
+    if (getState().settings.intervalMode === 'harmonic') {
       void play({ sounds: [{ time: 0, midi: [a, b] }] });
     } else {
       void play({ sounds: [{ time: 0, midi: [a] }, { time: 1.0, midi: [b] }] });
@@ -111,12 +111,12 @@ export default function IntervalsPage() {
     [playTask],
   );
 
-  // Moduswechsel: dieselbe Aufgabe behalten, nur die Richtung ggf. anpassen
+  // Mode change: keep the same task, only adjust the direction if needed
   const switchMode = useCallback(
     (newMode: IntervalPlayMode) => {
       if (autoPlayTimer.current) window.clearTimeout(autoPlayTimer.current);
       stopAll();
-      const up = newMode !== 'abwaerts';
+      const up = newMode !== 'descending';
       const t = up === task.up ? task : { ...task, start: task.second, second: task.start, up };
       setTask(t);
       autoPlayTimer.current = window.setTimeout(() => {
@@ -126,7 +126,7 @@ export default function IntervalsPage() {
     [task, playTask],
   );
 
-  // Erste Aufgabe automatisch abspielen
+  // Play the first task automatically
   useEffect(() => {
     autoPlayTimer.current = window.setTimeout(() => {
       if (isAudioRunning()) playTask(task);
@@ -140,7 +140,7 @@ export default function IntervalsPage() {
 
   function answer(iv: IntervalDef) {
     if (phase !== 'answer') return;
-    // Ausstehende automatische Wiedergabe abbrechen, sonst überdeckt sie später „Deine Antwort“.
+    // Cancel pending automatic playback, otherwise it would later drown out "Deine Antwort".
     if (autoPlayTimer.current) window.clearTimeout(autoPlayTimer.current);
     stopAll();
     const correct = iv.id === task.interval.id;
@@ -224,7 +224,7 @@ export default function IntervalsPage() {
             onChange={(e) => {
               const extended = e.target.checked;
               updateSettings({ intervalExtended: extended });
-              // Nur neue Aufgabe, wenn die aktuelle nicht mehr zur Auswahl gehört
+              // Only a new task if the current one is no longer part of the selection
               if (!extended && task.interval.extended) next({ extended });
             }}
           />
@@ -291,7 +291,7 @@ export default function IntervalsPage() {
 
       {phase === 'done' && (
         <SolutionScore
-          sounds={mode === 'harmonisch' ? [[task.start, task.second]] : [[task.start], [task.second]]}
+          sounds={mode === 'harmonic' ? [[task.start, task.second]] : [[task.start], [task.second]]}
           ariaLabel={`Lösung: ${germanNameWithOctave(task.start)} und ${germanNameWithOctave(task.second)}`}
         />
       )}
@@ -302,7 +302,7 @@ export default function IntervalsPage() {
           prompt={
             <>
               Ausgangston: <b>{germanName(task.start)}</b>. Wie heißt der zweite Ton ({task.interval.long}{' '}
-              {mode === 'harmonisch' ? 'darüber' : directionWord})?
+              {mode === 'harmonic' ? 'darüber' : directionWord})?
             </>
           }
           slots={['Zweiter Ton']}

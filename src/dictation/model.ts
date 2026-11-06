@@ -1,6 +1,6 @@
 import { Pitch } from '../music/pitch';
 
-/** Ticks pro Viertel. 24 ist durch 2, 3 und 8 teilbar (Achtel, Triolen, Punktierungen). */
+/** Ticks per quarter note. 24 is divisible by 2, 3 and 8 (eighths, triplets, dots). */
 export const TICKS_PER_QUARTER = 24;
 
 export type BaseValue = 'w' | 'h' | 'q' | '8';
@@ -40,13 +40,13 @@ export function durationLabel(d: Duration): string {
 }
 
 export interface DNote {
-  /** Eindeutige ID (für Auswahl und Fehlermarkierung) */
+  /** Unique ID (for selection and error marking) */
   id: string;
-  /** Beginn in Ticks ab Stückanfang (Auftakt beginnt bei 0) */
+  /** Start in ticks from the beginning of the piece (pickup starts at 0) */
   start: number;
   dur: Duration;
   pitch: Pitch;
-  /** Vorgegebene Note, nicht änderbar */
+  /** Given note, cannot be changed */
   given?: boolean;
 }
 
@@ -54,12 +54,12 @@ export function noteEnd(n: DNote): number {
   return n.start + durationTicks(n.dur);
 }
 
-export type DictationKind = 'einstimmig' | 'zweistimmig' | 'vierstimmig';
+export type DictationKind = 'monophonic' | 'two-part' | 'four-part';
 
 export const KIND_LABELS: Record<DictationKind, string> = {
-  einstimmig: 'Einstimmiges Diktat',
-  zweistimmig: 'Zweistimmiges Diktat',
-  vierstimmig: 'Vierstimmiger Satz',
+  monophonic: 'Einstimmiges Diktat',
+  'two-part': 'Zweistimmiges Diktat',
+  'four-part': 'Vierstimmiger Satz',
 };
 
 export interface Measure {
@@ -75,11 +75,11 @@ export interface Dictation {
   minor: boolean;
   beats: number;
   beatType: number;
-  /** Viertel pro Minute */
+  /** Quarter notes per minute */
   tempo: number;
-  /** Takte (bzw. beim vierstimmigen Satz: Akkorde) */
+  /** Measures (for four-part chorales: chords) */
   measures: Measure[];
-  /** Stimmen von oben nach unten */
+  /** Voices from top to bottom */
   voices: DNote[][];
 }
 
@@ -113,7 +113,7 @@ export function newId(prefix = 'n'): string {
   return `${prefix}${Date.now().toString(36)}${idCounter.toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
 }
 
-/** Zerlegt eine Lücke in darstellbare Notenwerte (für unsichtbare Platzhalter). */
+/** Splits a gap into representable note values (for invisible placeholders). */
 export function splitTicks(ticks: number): Duration[] {
   const options: Duration[] = [
     { base: 'w', dotted: true, triplet: false },
@@ -138,10 +138,10 @@ export function splitTicks(ticks: number): Duration[] {
 }
 
 export interface RestSlot {
-  /** Beginn in Ticks ab Stückanfang */
+  /** Start in ticks from the beginning of the piece */
   start: number;
   dur: Duration;
-  /** Ganztaktpause (wird mittig gesetzt) */
+  /** Whole-measure rest (centered) */
   wholeMeasure: boolean;
 }
 
@@ -154,9 +154,9 @@ const REST_OPTIONS: Duration[] = [
 ];
 
 /**
- * Pausen für die Lücken eines Taktes. `notes` sind die Noten eines Systems
- * (mehrere Stimmen erlaubt). Ein leerer Takt erhält eine Ganztaktpause,
- * sonst werden Lücken in auf den Takt ausgerichtete Pausenwerte zerlegt.
+ * Rests for the gaps in a measure. `notes` are the notes of one staff
+ * (multiple voices allowed). An empty measure gets a whole-measure rest;
+ * otherwise gaps are split into rest values aligned to the measure.
  */
 export function restsInMeasure(notes: DNote[], m: Measure): RestSlot[] {
   const end = m.start + m.ticks;

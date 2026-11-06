@@ -88,7 +88,7 @@ a {
   outline-offset: 2px;
 }
 
-/* ---------- Kopf und Fuß ---------- */
+/* ---------- Header and footer ---------- */
 
 .site-header {
   display: flex;
@@ -155,7 +155,7 @@ main {
   margin: 4px 0;
 }
 
-/* ---------- Bausteine ---------- */
+/* ---------- Building blocks ---------- */
 
 h1 {
   font-size: 1.5rem;
@@ -255,7 +255,7 @@ button.ghost {
   border-color: transparent;
 }
 
-/* Tastenkürzel klein auf dem Button */
+/* Small keyboard shortcut on the button */
 kbd.hint {
   font-family: ui-monospace, monospace;
   font-size: 0.65rem;
@@ -292,7 +292,7 @@ kbd.hint {
   gap: 2px;
 }
 
-/* Lange/kurze Beschriftung je nach Breite */
+/* Long/short label depending on width */
 .label-short {
   display: none;
 }
@@ -314,7 +314,7 @@ kbd.hint {
   vertical-align: middle;
 }
 
-/* ---------- Startseite ---------- */
+/* ---------- Home page ---------- */
 
 .tiles {
   display: grid;
@@ -373,7 +373,7 @@ kbd.hint {
   letter-spacing: 0.04em;
 }
 
-/* Handy: einspaltig, Notenbeispiel links, Text rechts */
+/* Phone: single column, music example left, text right */
 @media (max-width: 520px) {
   .tiles {
     grid-template-columns: 1fr;
@@ -393,7 +393,7 @@ kbd.hint {
   }
 }
 
-/* ---------- Übungen ---------- */
+/* ---------- Exercises ---------- */
 
 .toolbar {
   display: flex;
@@ -513,7 +513,7 @@ details > summary {
   font-weight: 600;
 }
 
-/* ---------- Tonbenennung ---------- */
+/* ---------- Note naming ---------- */
 
 .namer .steps,
 .namer .accs {
@@ -536,12 +536,12 @@ details > summary {
   min-width: 110px;
 }
 
-/* ---------- Diktat ---------- */
+/* ---------- Dictation ---------- */
 
 .dict-list {
   list-style: none;
   padding: 0;
-  /* nur unten/seitlich zurücksetzen, damit der Abstand aus .stack greift */
+  /* only reset bottom/sides so that the spacing from .stack applies */
   margin-left: 0;
   margin-right: 0;
   margin-bottom: 0;
@@ -642,7 +642,7 @@ details > summary {
   }
 }
 
-/* ---------- Klaviatur ---------- */
+/* ---------- Keyboard ---------- */
 
 .piano-wrap {
   overflow-x: auto;
@@ -694,7 +694,7 @@ details > summary {
   filter: brightness(0.85);
 }
 
-/* ---------- Dialoge, Tour, Hinweise ---------- */
+/* ---------- Dialogs, tour, hints ---------- */
 
 .overlay {
   position: fixed;

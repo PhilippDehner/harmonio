@@ -12,32 +12,32 @@ function melody(steps: number[], dur: Duration = q, prefix = 's'): DNote[] {
   return steps.map((s, i) => ({ id: `${prefix}${i}`, start: i * durationTicks(dur), dur, pitch: P(s) }));
 }
 
-describe('Auswertung', () => {
-  it('alles richtig', () => {
+describe('Evaluation', () => {
+  it('everything correct', () => {
     const r = evaluateVoice(melody([0, 1, 2, 3]), melody([0, 1, 2, 3], q, 'u'));
     expect(r.pitchErrors + r.followErrors + r.rhythmErrors).toBe(0);
   });
-  it('Folgefehler: ab einer Stelle alles eine Terz verschoben', () => {
+  it('follow-up errors: from one point on everything shifted by a third', () => {
     const r = evaluateVoice(melody([0, 1, 2, 3, 4]), melody([0, 1, 4, 5, 6], q, 'u'));
     expect(r.notes.map((n) => n.pitch)).toEqual(['ok', 'ok', 'error', 'follow', 'follow']);
     expect(r.pitchErrors).toBe(1);
     expect(r.followErrors).toBe(2);
   });
-  it('Rückkehr zur richtigen Tonhöhe ist richtig', () => {
+  it('returning to the correct pitch is correct', () => {
     const r = evaluateVoice(melody([0, 1, 2, 3]), melody([0, 2, 2, 3], q, 'u'));
     expect(r.notes.map((n) => n.pitch)).toEqual(['ok', 'error', 'ok', 'ok']);
   });
-  it('einzelner falscher Ton ohne Folgefehler', () => {
+  it('single wrong note without follow-up errors', () => {
     const r = evaluateVoice(melody([0, 1, 2, 3]), melody([0, 1, 5, 3], q, 'u'));
     expect(r.notes.map((n) => n.pitch)).toEqual(['ok', 'ok', 'error', 'ok']);
   });
-  it('falsches Vorzeichen ist ein Tonhöhenfehler', () => {
+  it('wrong accidental is a pitch error', () => {
     const sol = melody([0, 1, 2]);
     const inp = melody([0, 1, 2], q, 'u');
     inp[2] = { ...inp[2], pitch: P(2, -1) };
     expect(evaluateVoice(sol, inp).pitchErrors).toBe(1);
   });
-  it('Rhythmusfehler: Halbe statt zwei Viertel', () => {
+  it('rhythm error: half note instead of two quarters', () => {
     const sol = melody([0, 0, 2]);
     const inp: DNote[] = [
       { id: 'u0', start: 0, dur: h, pitch: P(0) },
@@ -48,12 +48,12 @@ describe('Auswertung', () => {
     expect(r.rhythmErrors).toBe(1);
     expect(r.pitchErrors).toBe(0);
   });
-  it('fehlende Noten zählen als Rhythmusfehler', () => {
+  it('missing notes count as rhythm errors', () => {
     const r = evaluateVoice(melody([0, 1, 2, 3]), melody([0, 1], q, 'u'));
     expect(r.missing.length).toBe(2);
     expect(r.rhythmErrors).toBe(2);
   });
-  it('vierstimmig: Folgefehler pro Stimme', () => {
+  it('four-part: follow-up errors per voice', () => {
     const whole: Duration = { base: 'w', dotted: false, triplet: false };
     const mk = (pitches: number[][], pre: string) =>
       [0, 1, 2, 3].map((v) => pitches.map((c, i) => ({ id: `${pre}${i}${v}`, start: i * 96, dur: whole, pitch: P(c[v], 0, 4 - Math.floor(v / 2)) })));
@@ -65,13 +65,13 @@ describe('Auswertung', () => {
   });
 });
 
-describe('Bearbeitung', () => {
+describe('Editing', () => {
   const measures = [{ start: 0, ticks: 96 }, { start: 96, ticks: 96 }];
-  it('verhindert Noten über den Taktstrich', () => {
+  it('prevents notes across the bar line', () => {
     const r = insertNote([], measures, 72, h, P(0));
     expect(r.ok).toBe(false);
   });
-  it('ersetzt überlappende Noten', () => {
+  it('replaces overlapping notes', () => {
     const r1 = insertNote([], measures, 0, q, P(0));
     if (!r1.ok) throw new Error();
     const r2 = insertNote(r1.notes, measures, 24, q, P(1));
@@ -80,7 +80,7 @@ describe('Bearbeitung', () => {
     if (!r3.ok) throw new Error();
     expect(r3.notes.length).toBe(1);
   });
-  it('verteilt Oberstimmen nach Tonhöhe', () => {
+  it('assigns upper voices by pitch', () => {
     const v = distributeChorale([[P(0, 0, 4), P(4, 0, 4), P(2, 0, 4)]], [P(0, 0, 3)], [{ start: 0, ticks: 96 }], false);
     expect(v.map((x) => x[0].pitch.step)).toEqual([4, 2, 0, 0]);
   });
@@ -97,8 +97,8 @@ describe('MusicXML', () => {
      <note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>1</duration><type>eighth</type></note>
      <note><pitch><step>E</step><octave>4</octave></pitch><duration>2</duration><type>quarter</type></note></measure>
   </part></score-partwise>`;
-  it('liest Auftakt, Tonart, Takt, Tempo und Noten', () => {
-    const d = parseMusicXml(xml, { id: 'x', kind: 'einstimmig', number: 1 });
+  it('reads pickup, key, time, tempo and notes', () => {
+    const d = parseMusicXml(xml, { id: 'x', kind: 'monophonic', number: 1 });
     expect(d.keyFifths).toBe(1);
     expect(d.beats).toBe(3);
     expect(d.tempo).toBe(90);
@@ -112,19 +112,19 @@ describe('MusicXML', () => {
 describe('restsInMeasure', () => {
   const m = { start: 96, ticks: 96 };
   const pitch = P(0);
-  it('leerer Takt erhält Ganztaktpause', () => {
+  it('empty measure gets a whole-measure rest', () => {
     const r = restsInMeasure([], m);
     expect(r).toHaveLength(1);
     expect(r[0].wholeMeasure).toBe(true);
   });
-  it('füllt den Rest nach einer Viertel mit Viertel- und Halber Pause', () => {
+  it('fills the remainder after a quarter with quarter and half rests', () => {
     const r = restsInMeasure([{ id: 'a', start: 96, dur: q, pitch }], m);
     expect(r.map((x) => [x.start, x.dur.base])).toEqual([
       [120, 'q'],
       [144, 'h'],
     ]);
   });
-  it('füllt Lücken vor und zwischen Noten', () => {
+  it('fills gaps before and between notes', () => {
     const r = restsInMeasure([{ id: 'a', start: 144, dur: q, pitch }], m);
     expect(r.map((x) => [x.start, x.dur.base])).toEqual([
       [96, 'h'],
@@ -135,7 +135,7 @@ describe('restsInMeasure', () => {
 
 describe('changeDuration', () => {
   const measures = [{ start: 0, ticks: 96 }];
-  it('verlängert eine Note und ersetzt überlappende', () => {
+  it('lengthens a note and replaces overlapping ones', () => {
     const notes = melody([0, 1, 2, 3]);
     const r = changeDuration(notes, measures, 's0', h);
     expect(r.ok).toBe(true);
@@ -144,7 +144,7 @@ describe('changeDuration', () => {
       expect(r.notes.map((n) => n.id)).toEqual(['s0', 's2', 's3']);
     }
   });
-  it('lehnt Überschreiten des Taktes ab', () => {
+  it('rejects exceeding the measure', () => {
     const notes = melody([0, 1, 2, 3]);
     expect(changeDuration(notes, measures, 's3', h).ok).toBe(false);
   });

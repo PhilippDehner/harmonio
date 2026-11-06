@@ -8,7 +8,7 @@ export function secondsPerTick(tempo: number): number {
   return 60 / tempo / TICKS_PER_QUARTER;
 }
 
-/** Klänge der Stimmen ab einem Tick; Zeit 0 = Position `fromTick`. */
+/** Sounds of the voices from a tick on; time 0 = position `fromTick`. */
 export function voiceSounds(voices: DNote[][], tempo: number, fromTick = 0, offset = 0): SoundEvent[] {
   const spt = secondsPerTick(tempo);
   const events: SoundEvent[] = [];
@@ -26,21 +26,21 @@ export function voiceSounds(voices: DNote[][], tempo: number, fromTick = 0, offs
 }
 
 /**
- * Vierstimmige Kadenz I–IV–V–I (Moll: i–iv–V–i) in enger Lage:
- * I in Oktavlage, IV in Quintlage, V in Terzlage, I in Oktavlage.
+ * Four-part cadence I–IV–V–I (minor: i–iv–V–i) in close position:
+ * I with octave on top, IV with fifth on top, V with third on top, I with octave on top.
  */
 export function cadenceChords(keyFifths: number, minor: boolean): number[][] {
   const tonicName = keyTonic(keyFifths, minor);
-  // Grundton so legen, dass der Bass zwischen F und e liegt
+  // Place the root so that the bass lies between F and e
   let tonic: Pitch = { ...tonicName, octave: 3 };
   if (toMidi(tonic) > 52) tonic = { ...tonic, octave: 2 };
   const subdominant = transpose(tonic, 3, 5);
   const dominant = transpose(tonic, 4, 7);
-  const tQ = minor ? 'moll' : 'dur';
-  const chords = [chordTones(tonic, tQ), chordTones(subdominant, tQ), chordTones(dominant, 'dur'), chordTones(tonic, tQ)];
-  // Index des Akkordtons im Sopran: 0 = Oktavlage, 1 = Terzlage, 2 = Quintlage
+  const tQ = minor ? 'minor' : 'major';
+  const chords = [chordTones(tonic, tQ), chordTones(subdominant, tQ), chordTones(dominant, 'major'), chordTones(tonic, tQ)];
+  // Index of the chord tone in the soprano: 0 = octave, 1 = third, 2 = fifth
   const sopranoTone = [0, 2, 1, 0];
-  // Sopran des ersten Akkords zwischen f' und e'', danach stimmführungsnah
+  // Soprano of the first chord between f' and e'', then with smooth voice leading
   let soprano = 65 + ((toMidi(tonic) % 12) - 65 % 12 + 12) % 12;
   return chords.map((c, i) => {
     const pcs = c.map((p) => toMidi(p) % 12);
@@ -49,7 +49,7 @@ export function cadenceChords(keyFifths: number, minor: boolean): number[][] {
       const below = soprano - (((soprano - spc) % 12) + 12) % 12;
       soprano = soprano - below <= 6 ? below : below + 12;
     }
-    // Übrige Akkordtöne in enger Lage direkt unter dem Sopran
+    // Remaining chord tones in close position directly below the soprano
     const inner = pcs
       .filter((_, k) => k !== sopranoTone[i])
       .map((pc) => soprano - ((((soprano - pc) % 12) + 12) % 12 || 12))
@@ -61,16 +61,16 @@ export function cadenceChords(keyFifths: number, minor: boolean): number[][] {
 export interface IntroPlan {
   sounds: SoundEvent[];
   clicks: ClickEvent[];
-  /** Sekunden bis zum Beginn der Melodie */
+  /** Seconds until the melody starts */
   melodyOffset: number;
 }
 
-/** Ticks des Einzählens: ein ganzer Takt, bei Auftakt zusätzlich die Schläge bis zum Auftakt. */
+/** Count-in ticks: one full measure, plus the beats up to the pickup if there is one. */
 export function countInClicks(d: Dictation): { tick: number; accent: boolean }[] {
   const full = measureTicks(d.beats, d.beatType);
   const beat = beatTicks(d.beatType);
   const first = d.measures[0]?.ticks ?? full;
-  const pickup = d.kind !== 'vierstimmig' && first < full ? first : 0;
+  const pickup = d.kind !== 'four-part' && first < full ? first : 0;
   const clicks: { tick: number; accent: boolean }[] = [];
   for (let k = 0; k * beat < full; k++) clicks.push({ tick: k * beat, accent: k === 0 });
   if (pickup > 0) {
@@ -82,11 +82,11 @@ export function countInClicks(d: Dictation): { tick: number; accent: boolean }[]
 export function countInLength(d: Dictation): number {
   const full = measureTicks(d.beats, d.beatType);
   const first = d.measures[0]?.ticks ?? full;
-  const pickup = d.kind !== 'vierstimmig' && first < full ? first : 0;
+  const pickup = d.kind !== 'four-part' && first < full ? first : 0;
   return pickup > 0 ? full + (full - pickup) : full;
 }
 
-/** Kadenz und Einzählen vor dem ersten Abspielen. */
+/** Cadence and count-in before the first playback. */
 export function introPlan(d: Dictation): IntroPlan {
   const spt = secondsPerTick(d.tempo);
   const chordLen = Math.min(TICKS_PER_QUARTER * spt, 0.6);
@@ -95,12 +95,12 @@ export function introPlan(d: Dictation): IntroPlan {
     midi,
     duration: chordLen * (i === 3 ? 1.8 : 0.95),
   }));
-  const pause = 5 * chordLen; // Kadenz (4 Akkorde) + Atempause
+  const pause = 5 * chordLen; // cadence (4 chords) + breathing pause
   const clicks: ClickEvent[] = countInClicks(d).map((c) => ({ time: pause + c.tick * spt, accent: c.accent }));
   return { sounds, clicks, melodyOffset: pause + countInLength(d) * spt };
 }
 
-/** Gesamtdauer der Melodie in Sekunden. */
+/** Total duration of the melody in seconds. */
 export function melodySeconds(d: Dictation): number {
   const last = d.measures[d.measures.length - 1];
   return last ? (last.start + last.ticks) * secondsPerTick(d.tempo) : 0;

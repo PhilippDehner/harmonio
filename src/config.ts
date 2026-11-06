@@ -1,4 +1,4 @@
-/** Zentrale Angaben zur Seite. */
+/** Central site information. */
 export const SITE_NAME = 'Harmonio';
 export const GITHUB_URL = 'https://github.com/philippdehner';
 export const REPO_URL = 'https://github.com/philippdehner/harmonio';

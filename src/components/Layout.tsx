@@ -21,7 +21,7 @@ function ThemeToggle() {
 
 export default function Layout() {
   const location = useLocation();
-  const isExercise = location.pathname !== '/' && !['/statistik', '/einstellungen'].includes(location.pathname);
+  const isExercise = location.pathname !== '/' && !['/stats', '/settings'].includes(location.pathname);
   return (
     <>
       <header className="site-header">
@@ -30,10 +30,10 @@ export default function Layout() {
           {SITE_NAME}
         </NavLink>
         <nav aria-label="Hauptnavigation">
-          <NavLink to="/statistik" aria-label="Statistik">
+          <NavLink to="/stats" aria-label="Statistik">
             📊 <span className="nav-label">Statistik</span>
           </NavLink>
-          <NavLink to="/einstellungen" aria-label="Einstellungen">
+          <NavLink to="/settings" aria-label="Einstellungen">
             ⚙ <span className="nav-label">Einstellungen</span>
           </NavLink>
           <ThemeToggle />

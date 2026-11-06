@@ -2,17 +2,17 @@ import { Dictation, DictationKind } from './model';
 import { parseMusicXml } from './musicxml';
 
 /**
- * Alle MusicXML-Dateien im Ordner /diktate werden beim Build automatisch
- * erfasst. Neue Diktate einfach in den passenden Unterordner legen
- * (einstimmig, zweistimmig, vierstimmig); die Nummer ergibt sich aus der
- * ersten Zahl im Dateinamen, sonst aus der Reihenfolge.
+ * All MusicXML files in the /dictations folder are collected automatically at
+ * build time. To add a dictation, put it into the matching subfolder
+ * (monophonic, two-part, four-part); its number is the first number in the
+ * file name, otherwise its position in the sort order.
  */
-const files = import.meta.glob('/diktate/**/*.{musicxml,xml}', {
+const files = import.meta.glob('/dictations/**/*.{musicxml,xml}', {
   query: '?raw',
   import: 'default',
 }) as Record<string, () => Promise<string>>;
 
-export const KINDS: DictationKind[] = ['einstimmig', 'zweistimmig', 'vierstimmig'];
+export const KINDS: DictationKind[] = ['monophonic', 'two-part', 'four-part'];
 
 export interface CatalogEntry {
   id: string;
@@ -25,7 +25,7 @@ function buildCatalog(): CatalogEntry[] {
   const entries: CatalogEntry[] = [];
   for (const kind of KINDS) {
     const paths = Object.keys(files)
-      .filter((p) => p.startsWith(`/diktate/${kind}/`))
+      .filter((p) => p.startsWith(`/dictations/${kind}/`))
       .sort((a, b) => a.localeCompare(b, 'de', { numeric: true }));
     paths.forEach((path, i) => {
       const name = path.split('/').pop()!;
@@ -56,7 +56,7 @@ export async function loadDictation(id: string): Promise<Dictation> {
   return d;
 }
 
-/** Zufallsauswahl: bevorzugt noch nicht gemachte Diktate; sind alle erledigt, aus allen. */
+/** Random pick: prefers dictations not done yet; if all are done, picks from all. */
 export function pickRandom(kind: DictationKind, done: Set<string>, rng: () => number = Math.random): CatalogEntry | null {
   const all = entriesOf(kind);
   if (all.length === 0) return null;
