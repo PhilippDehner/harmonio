@@ -13,7 +13,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '1.3.0',
     date: '2026-11-06',
     changes: [
-      'Tonangabe: Reihenfolge der Töne wählbar – von unten nach oben, von oben nach unten oder nach Funktion (Grundton, Quinte, Terz).',
+      'Tonangabe: Reihenfolge der Töne wählbar – von unten nach oben, von oben nach unten oder nach Funktion (Grundton, Quinte, Terz), auch in den Einstellungen.',
+      'Tonangabe: Mikrofon lässt sich wieder ausschalten, z. B. um dir selbst Töne vorzusingen.',
     ],
   },
   {

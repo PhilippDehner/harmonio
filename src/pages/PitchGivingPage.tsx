@@ -59,7 +59,11 @@ function MicControls({ mic }: { mic: Mic }) {
           🎤 Mikrofon einschalten
         </button>
       )}
-      {mic.state === 'on' && <span className="muted small">🎤 Mikrofon an</span>}
+      {mic.state === 'on' && (
+        <button onClick={mic.stop} title="Mikrofon ausschalten, z. B. um dir selbst Töne vorzusingen">
+          🎤 Mikrofon ausschalten
+        </button>
+      )}
     </>
   );
 }
@@ -228,6 +232,13 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Microphone switched off: forget a half-held note
+  useEffect(() => {
+    if (mic.state === 'on') return;
+    hold.current.reset();
+    setLive(null);
+  }, [mic.state]);
 
   const chordMidi = task.voicing.notes.map(toMidi);
 
@@ -399,7 +410,9 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
                           <span className="muted small"> (danach automatisch weiter)</span>
                         </>
                       ) : (
-                        <span className="muted">Mikrofon einschalten, dann singen</span>
+                        <span className="muted">
+                          {pos > 0 ? 'Mikrofon aus – zum Weitersingen einschalten' : 'Mikrofon einschalten, dann singen'}
+                        </span>
                       )
                     ) : (
                       <span className="muted">–</span>

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { VOICE_LABEL } from '../music/pitchGiving';
+import { SING_ORDERS, VOICE_LABEL } from '../music/pitchGiving';
 import { RANGES, RangeLevel, ThemeSetting, exportData, importData, updateSettings, useSettings } from '../storage/store';
 
 async function shareOrDownload(): Promise<string> {
@@ -131,6 +131,26 @@ export default function SettingsPage() {
           <button onClick={() => updateSettings({ voiceType: null })} disabled={settings.voiceType === null}>
             Neu erkennen
           </button>
+        </div>
+      </div>
+
+      <div className="card stack">
+        <h2 style={{ marginTop: 0 }}>Reihenfolge der Töne (Tonangabe)</h2>
+        <p className="muted small" style={{ margin: 0 }}>
+          In welcher Reihenfolge du die vier Töne singst. Nach Funktion kommen zuerst beide Grundtöne (der tiefere
+          zuerst), dann Quinte und Terz.
+        </p>
+        <div className="segmented" role="group" aria-label="Reihenfolge der Töne">
+          {SING_ORDERS.map((o) => (
+            <button
+              key={o.id}
+              aria-pressed={settings.singOrder === o.id}
+              title={`Singen ${o.text}`}
+              onClick={() => updateSettings({ singOrder: o.id })}
+            >
+              {o.label}
+            </button>
+          ))}
         </div>
       </div>
 
