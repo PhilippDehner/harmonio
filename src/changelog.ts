@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.3.0',
+    date: '2026-11-06',
+    changes: [
+      'Tonangabe: Reihenfolge der Töne wählbar – von unten nach oben, von oben nach unten oder nach Funktion (Grundton, Quinte, Terz).',
+    ],
+  },
+  {
     version: '1.2.0',
     date: '2026-11-06',
     changes: [

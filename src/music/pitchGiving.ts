@@ -1,5 +1,5 @@
 import { freqToMidi, VoiceType } from '../audio/pitchDetect';
-import { ChordType, Inversion } from './chords';
+import { ChordType, Inversion, Voicing, chordTones } from './chords';
 import { Pitch, germanName, mod, spellForKey, toMidi } from './pitch';
 import { ChordTask, Rng, makeChordTask, pick } from './tasks';
 
@@ -10,8 +10,38 @@ export function makePitchGivingTask(rng: Rng = Math.random): ChordTask {
   return makeChordTask(type, inversion, rng);
 }
 
-/** Singing order: bottom to top (indices into `voicing.notes`). */
-export const SING_ORDER = [3, 2, 1, 0] as const;
+/** Order in which the four notes are sung. */
+export type SingOrder = 'up' | 'down' | 'function';
+
+export const SING_ORDERS: { id: SingOrder; label: string; text: string }[] = [
+  { id: 'up', label: 'von unten', text: 'von unten nach oben (Bass, Tenor, Alt, Sopran)' },
+  { id: 'down', label: 'von oben', text: 'von oben nach unten (Sopran, Alt, Tenor, Bass)' },
+  { id: 'function', label: 'Grundton, Quinte, Terz', text: 'nach Funktion: Grundton, Quinte, Terz' },
+];
+
+/** Chord function of a note: 0 = root, 1 = third, 2 = fifth. */
+function chordFunction(p: Pitch, root: Pitch, type: ChordType): number {
+  return chordTones(root, type).findIndex((t) => t.step === p.step && t.alter === p.alter);
+}
+
+export const FUNCTION_NAMES = ['Grundton', 'Terz', 'Quinte'] as const;
+
+/** German name of a note's chord function, e.g. "Grundton". */
+export function functionName(p: Pitch, root: Pitch, type: ChordType): string {
+  return FUNCTION_NAMES[chordFunction(p, root, type)];
+}
+
+/**
+ * Indices into `voicing.notes` in singing order. By function, both root
+ * voices come first (lower before higher), then fifth, then third.
+ */
+export function singOrder(voicing: Voicing, root: Pitch, type: ChordType, order: SingOrder): number[] {
+  if (order === 'up') return [3, 2, 1, 0];
+  if (order === 'down') return [0, 1, 2, 3];
+  const rank = (i: number) => [0, 2, 1][chordFunction(voicing.notes[i], root, type)];
+  // Array.prototype.sort is stable: equal functions stay bottom to top
+  return [3, 2, 1, 0].sort((a, b) => rank(a) - rank(b));
+}
 
 /** Voice part names in German (UI), indexed like `voicing.notes`. */
 export const VOICE_NAMES = ['Sopran', 'Alt', 'Tenor', 'Bass'] as const;

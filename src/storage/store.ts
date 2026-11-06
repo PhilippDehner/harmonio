@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { DNote } from '../dictation/model';
 import type { IntervalPlayMode } from '../music/tasks';
 import type { VoiceType } from '../audio/pitchDetect';
+import type { SingOrder } from '../music/pitchGiving';
 import { migrateDictations, migrateSettings, migrateStats, migrateTours } from './migrate';
 
 const PREFIX = 'harmonio:';
@@ -57,6 +58,8 @@ export interface Settings {
   autoNextSeconds: number;
   /** Voice type for the pitch-giving exercise; null = not detected yet */
   voiceType: VoiceType | null;
+  /** Order in which the notes are sung in the pitch-giving exercise */
+  singOrder: SingOrder;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -74,6 +77,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoNextWrong: false,
   autoNextSeconds: 2,
   voiceType: null,
+  singOrder: 'up',
 };
 
 export const RANGES: Record<RangeLevel, { label: string; midi: [number, number]; text: string }> = {
