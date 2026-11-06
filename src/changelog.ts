@@ -76,7 +76,7 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-/** Maximum number of releases shown in the app. */
+/** Maximum number of releases shown on startup after an update. */
 export const MAX_SHOWN_RELEASES = 3;
 
 /** Newest entries newer than `lastSeen` (all if `lastSeen` is null), at most MAX_SHOWN_RELEASES. */

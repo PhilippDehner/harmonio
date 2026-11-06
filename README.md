@@ -48,7 +48,7 @@ Die mitgelieferten Diktate sind einfache Beispiele zum Testen.
 
 ## Neue Version
 
-Version in `package.json` erhöhen. Bringt das Release neue Features, oben in `src/changelog.ts` einen Eintrag ergänzen – nur neue Features (auf Deutsch), keine Korrekturen oder kleinen Anpassungen. Nutzer sehen die Neuigkeiten beim nächsten Öffnen; über „Neuigkeiten“ im Fußbereich sind die letzten 3 Releases abrufbar (beim Öffnen ebenfalls höchstens 3).
+Version in `package.json` erhöhen. Bringt das Release neue Features, oben in `src/changelog.ts` einen Eintrag ergänzen – nur neue Features (auf Deutsch), keine Korrekturen oder kleinen Anpassungen. Nutzer sehen die Neuigkeiten beim nächsten Öffnen; beim Öffnen werden höchstens die letzten 3 Releases angezeigt. Über „Neuigkeiten“ im Fußbereich ist der ganze Verlauf abrufbar.
 
 ## Deployment
 
