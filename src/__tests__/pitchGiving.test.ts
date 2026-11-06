@@ -6,8 +6,11 @@ import {
   evaluateSung,
   expectedMidi,
   functionName,
+  isCloseVoicing,
+  keyFifthsOf,
   makePitchGivingTask,
   nearestNoteName,
+  PitchGivingOptions,
   singOrder,
   sungPitch,
   sungStatus,
@@ -169,5 +172,46 @@ describe('Singing order', () => {
       const names = o.map((vi) => functionName(t.voicing.notes[vi], t.root, t.type));
       expect(names).toEqual(['Grundton', 'Grundton', 'Quinte', 'Terz']);
     }
+  });
+});
+
+describe('Pitch giving difficulty', () => {
+  const opts = (o: Partial<PitchGivingOptions>): PitchGivingOptions => ({
+    fewAccidentals: true,
+    manyAccidentals: true,
+    major: true,
+    minor: true,
+    wide: true,
+    ...o,
+  });
+  it('key signature of a chord root', () => {
+    expect(keyFifthsOf({ step: 0, alter: 0 }, false)).toBe(0); // C-Dur
+    expect(keyFifthsOf({ step: 2, alter: -1 }, false)).toBe(-3); // Es-Dur
+    expect(keyFifthsOf({ step: 1, alter: 1 }, true)).toBe(6); // dis-Moll
+    expect(keyFifthsOf({ step: 1, alter: 1 }, false)).toBeNull(); // Dis-Dur
+  });
+  it('few accidentals, major only, close positions', () => {
+    for (let i = 0; i < 300; i++) {
+      const t = makePitchGivingTask(opts({ manyAccidentals: false, minor: false, wide: false }));
+      expect(t.type).toBe('major');
+      expect(Math.abs(keyFifthsOf(t.root, false)!)).toBeLessThanOrEqual(3);
+      expect(isCloseVoicing(t.voicing)).toBe(true);
+    }
+  });
+  it('many accidentals, minor only', () => {
+    for (let i = 0; i < 300; i++) {
+      const t = makePitchGivingTask(opts({ fewAccidentals: false, major: false }));
+      expect(t.type).toBe('minor');
+      const f = Math.abs(keyFifthsOf(t.root, true)!);
+      expect(f).toBeGreaterThanOrEqual(4);
+      expect(f).toBeLessThanOrEqual(7);
+    }
+  });
+  it('every combination yields tasks', () => {
+    for (const fewAccidentals of [true, false])
+      for (const major of [true, false])
+        for (const wide of [true, false])
+          for (let i = 0; i < 50; i++)
+            makePitchGivingTask(opts({ fewAccidentals, manyAccidentals: !fewAccidentals, major, minor: !major, wide }));
   });
 });

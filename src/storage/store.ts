@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { DNote } from '../dictation/model';
 import type { IntervalPlayMode } from '../music/tasks';
 import type { VoiceType } from '../audio/pitchDetect';
-import type { SingOrder } from '../music/pitchGiving';
+import type { PitchGivingOptions, SingOrder } from '../music/pitchGiving';
 import { DEFAULT_A4, setA4 } from '../audio/tuning';
 import { migrateDictations, migrateSettings, migrateStats, migrateTours } from './migrate';
 
@@ -63,6 +63,16 @@ export interface Settings {
   singOrder: SingOrder;
   /** Concert pitch a' in Hz (410–450) */
   tuningA4: number;
+  /** Pitch giving: keys with up to 3 accidentals */
+  pgFewAccidentals: boolean;
+  /** Pitch giving: keys with 4–7 accidentals */
+  pgManyAccidentals: boolean;
+  /** Pitch giving: major chords */
+  pgMajor: boolean;
+  /** Pitch giving: minor chords */
+  pgMinor: boolean;
+  /** Pitch giving: also wide positions and notes far from a' */
+  pgWide: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -82,7 +92,23 @@ export const DEFAULT_SETTINGS: Settings = {
   voiceType: null,
   singOrder: 'up',
   tuningA4: DEFAULT_A4,
+  pgFewAccidentals: true,
+  pgManyAccidentals: false,
+  pgMajor: true,
+  pgMinor: false,
+  pgWide: false,
 };
+
+/** Pitch-giving options from the settings. */
+export function pitchGivingOptions(s: Settings): PitchGivingOptions {
+  return {
+    fewAccidentals: s.pgFewAccidentals,
+    manyAccidentals: s.pgManyAccidentals,
+    major: s.pgMajor,
+    minor: s.pgMinor,
+    wide: s.pgWide,
+  };
+}
 
 export const RANGES: Record<RangeLevel, { label: string; midi: [number, number]; text: string }> = {
   narrow: { label: 'eng', midi: [60, 72], text: "c'–c''" },

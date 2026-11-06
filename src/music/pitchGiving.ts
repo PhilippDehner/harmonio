@@ -1,13 +1,98 @@
 import { freqToMidi, VoiceType } from '../audio/pitchDetect';
-import { ChordType, Inversion, Voicing, chordTones } from './chords';
-import { Pitch, germanName, mod, spellForKey, toMidi } from './pitch';
-import { ChordTask, Rng, makeChordTask, pick } from './tasks';
+import { ChordType, Inversion, Voicing, allVoicings, chordTones } from './chords';
+import { Pitch, PitchName, germanName, keyTonic, mod, spellForKey, toMidi } from './pitch';
+import { ChordTask, Rng, pick } from './tasks';
 
-/** Pitch giving: major and minor chords in any inversion. */
-export function makePitchGivingTask(rng: Rng = Math.random): ChordTask {
-  const type = pick<ChordType>(['major', 'minor'], rng);
-  const inversion = pick<Inversion>(['root', 'first', 'second'], rng);
-  return makeChordTask(type, inversion, rng);
+/** Which chords the pitch-giving exercise uses. */
+export interface PitchGivingOptions {
+  /** Keys with up to 3 accidentals */
+  fewAccidentals: boolean;
+  /** Keys with 4–7 accidentals */
+  manyAccidentals: boolean;
+  major: boolean;
+  minor: boolean;
+  /** Also wide positions and notes far from a' (otherwise close positions in a middle range) */
+  wide: boolean;
+}
+
+export const DEFAULT_PITCH_GIVING_OPTIONS: PitchGivingOptions = {
+  fewAccidentals: true,
+  manyAccidentals: false,
+  major: true,
+  minor: false,
+  wide: false,
+};
+
+/** Accidentals that count as "few". */
+export const FEW_ACCIDENTALS = 3;
+
+/**
+ * Middle ranges for the close setting (MIDI), close to the a the singer hears:
+ * soprano d'–e'', alto g–a', tenor c–e', bass F–a.
+ */
+const MIDDLE_RANGES: [number, number][] = [
+  [62, 76],
+  [55, 69],
+  [48, 64],
+  [41, 57],
+];
+
+/**
+ * Circle-of-fifths position of the key whose tonic is `tonic`
+ * (major for major chords, minor for minor chords), or null if the key
+ * would need more than 7 accidentals (e.g. Dis-Dur).
+ */
+export function keyFifthsOf(tonic: PitchName, minor: boolean): number | null {
+  for (let f = -7; f <= 7; f++) {
+    const t = keyTonic(f, minor);
+    if (t.step === tonic.step && t.alter === tonic.alter) return f;
+  }
+  return null;
+}
+
+/** Close position: upper three voices within an octave and in a middle range (bass may be further away). */
+export function isCloseVoicing(v: Voicing): boolean {
+  const m = v.notes.map(toMidi);
+  if (m[0] - m[2] > 12) return false;
+  return m.every((x, i) => x >= MIDDLE_RANGES[i][0] && x <= MIDDLE_RANGES[i][1]);
+}
+
+const ROOTS: Pitch[] = [];
+for (let step = 0; step < 7; step++) for (const alter of [-1, 0, 1]) ROOTS.push({ step, alter, octave: 3 });
+
+const INVERSIONS: Inversion[] = ['root', 'first', 'second'];
+
+/** Chord roots and types allowed by the options. */
+export function pitchGivingChords(o: PitchGivingOptions): { root: Pitch; type: ChordType }[] {
+  const types: ChordType[] = [...(o.major ? ['major' as const] : []), ...(o.minor ? ['minor' as const] : [])];
+  const out: { root: Pitch; type: ChordType }[] = [];
+  for (const type of types) {
+    for (const root of ROOTS) {
+      const f = keyFifthsOf(root, type === 'minor');
+      if (f === null) continue;
+      const few = Math.abs(f) <= FEW_ACCIDENTALS;
+      if (few ? o.fewAccidentals : o.manyAccidentals) out.push({ root, type });
+    }
+  }
+  return out;
+}
+
+/** Pitch giving: major and/or minor chords in any inversion, according to the options. */
+export function makePitchGivingTask(
+  options: PitchGivingOptions = DEFAULT_PITCH_GIVING_OPTIONS,
+  rng: Rng = Math.random,
+): ChordTask {
+  let chords = pitchGivingChords(options);
+  // Nothing selected (should not happen in the UI): fall back to the defaults
+  if (chords.length === 0) chords = pitchGivingChords(DEFAULT_PITCH_GIVING_OPTIONS);
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const { root, type } = pick(chords, rng);
+    const inversion = pick(INVERSIONS, rng);
+    let voicings = allVoicings(root, type, inversion);
+    if (!options.wide) voicings = voicings.filter(isCloseVoicing);
+    if (voicings.length > 0) return { type, inversion, root, voicing: pick(voicings, rng) };
+  }
+  throw new Error('No chord found');
 }
 
 /** Order in which the four notes are sung. */
