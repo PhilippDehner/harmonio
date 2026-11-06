@@ -5,6 +5,8 @@
  * applied to every load and every import.
  */
 
+import { clampA4 } from '../audio/tuning';
+
 const RANGES: Record<string, string> = { eng: 'narrow', mittel: 'medium', weit: 'wide' };
 
 const INTERVAL_MODES: Record<string, string> = {
@@ -71,6 +73,7 @@ export function migrateSettings<T extends AnyRecord>(settings: T): T {
   if (typeof s.range === 'string') s.range = map(RANGES, s.range);
   if (typeof s.intervalMode === 'string') s.intervalMode = map(INTERVAL_MODES, s.intervalMode);
   if (typeof s.inputMode === 'string') s.inputMode = map(INPUT_MODES, s.inputMode);
+  if ('tuningA4' in s) s.tuningA4 = clampA4(s.tuningA4);
   return s as T;
 }
 
