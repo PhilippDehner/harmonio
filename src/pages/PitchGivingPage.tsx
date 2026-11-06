@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { isAudioRunning, play, stopAll, unlockAudio } from '../audio/engine';
 import { MicFrame, useMic } from '../audio/mic';
 import { PitchHold, VoiceType, classifyVoice, freqToMidi } from '../audio/pitchDetect';
@@ -287,6 +286,11 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     }, 1000);
   }, [playA, resetSinging]);
 
+  /** Skip the current chord after asking; skipped chords do not count. */
+  const skip = () => {
+    if (confirm('Diesen Akkord wirklich überspringen? Er zählt nicht in der Statistik.')) next();
+  };
+
   // Difficulty changed: new chord matching the options
   const firstOptions = useRef(true);
   useEffect(() => {
@@ -324,7 +328,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
       playA();
     } else if (!done && key.toUpperCase() === 'N') {
       e.preventDefault();
-      next();
+      skip();
     } else if (done && key === 'Enter') {
       e.preventDefault();
       next();
@@ -363,12 +367,6 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
       <BetaNotice />
 
       <div className="toolbar">
-        <span>
-          Stimmlage: <b>{VOICE_LABEL[voice]}</b>
-        </span>
-        <Link to="/settings" className="small">
-          ändern
-        </Link>
         <div className="segmented" role="group" aria-label="Reihenfolge">
           {SING_ORDERS.map((o) => (
             <button
@@ -428,7 +426,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
         )}
         {pos > 0 && <button onClick={resetSinging}>Neu singen</button>}
         {!done && (
-          <button id="tg-new" onClick={next} title="Anderen Akkord, zählt nicht in der Statistik">
+          <button id="tg-new" onClick={skip} title="Anderen Akkord, zählt nicht in der Statistik">
             Neue Übung <kbd className="hint">N</kbd>
           </button>
         )}
