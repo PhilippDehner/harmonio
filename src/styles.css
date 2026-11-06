@@ -869,3 +869,8 @@ button.primary kbd.hint {
 .voice-list tr.err td {
   color: var(--err);
 }
+
+.voice-list button.mini {
+  padding: 2px 8px;
+  font-size: 0.85em;
+}

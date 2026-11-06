@@ -8,7 +8,7 @@ import { useHotkeys } from '../components/hotkeys';
 import SolutionScore from '../components/SolutionScore';
 import { LiveStats } from '../components/StatsViews';
 import { useTour } from '../components/Tour';
-import { germanName, germanNameWithOctave, toMidi } from '../music/pitch';
+import { Pitch, germanName, germanNameWithOctave, toMidi } from '../music/pitch';
 import {
   SING_ORDER,
   VOICE_LABEL,
@@ -20,6 +20,7 @@ import {
   formatCents,
   makePitchGivingTask,
   nearestNoteName,
+  sungPitch,
 } from '../music/pitchGiving';
 import { ChordTask } from '../music/tasks';
 import { updateSettings, useSettings } from '../storage/store';
@@ -169,7 +170,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const tour = useTour('pitch-giving', [
     { title: 'Tonangabe', text: 'Du siehst einen vierstimmigen Akkord und hörst nur das A (440 Hz). Finde davon ausgehend die Töne des Akkords.' },
     { selector: '#tg-a', title: 'A abspielen', text: 'Spiele das A beliebig oft ab (Leertaste).' },
-    { selector: '#tg-voices', title: 'Singen', text: 'Singe die vier Töne nacheinander von unten nach oben (Bass, Tenor, Alt, Sopran) und halte jeden kurz, bis er erkannt ist. Setze zwischen den Tönen kurz ab.' },
+    { selector: '#tg-voices', title: 'Singen', text: 'Singe die vier Töne nacheinander von unten nach oben (Bass, Tenor, Alt, Sopran) und halte jeden kurz, bis er erkannt ist. Du musst nichts anklicken: Nach jedem erkannten Ton geht es automatisch mit der nächsten Stimme weiter. Setze zwischen den Tönen nur kurz ab.' },
   ]);
 
   handler.current = (freq, time) => {
@@ -235,6 +236,9 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     } else if (done && key.toUpperCase() === 'K') {
       e.preventDefault();
       playChord(chordMidi);
+    } else if (done && key.toUpperCase() === 'T') {
+      e.preventDefault();
+      playSung();
     }
   });
 
@@ -242,6 +246,10 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const correctCount = results.filter((r) => r?.correct).length;
   const meanCents = Math.round(results.reduce((sum, r) => sum + Math.abs(r?.cents ?? 0), 0) / 4);
   const autoNextIn = useAutoNext(done, allCorrect, next);
+  // Chord as sung (wrong notes replaced), in the written octaves
+  const sungVoicing: Pitch[] | null =
+    done && !allCorrect ? task.voicing.notes.map((p, i) => sungPitch(p, results[i]!, task.root)) : null;
+  const playSung = () => sungVoicing && playChord(sungVoicing.map(toMidi));
 
   return (
     <div className="stack">
@@ -257,7 +265,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
         <span>
           Stimmlage: <b>{VOICE_LABEL[voice]}</b>
         </span>
-        <Link to="/einstellungen" className="small">
+        <Link to="/settings" className="small">
           ändern
         </Link>
         <label className="toggle">
@@ -271,8 +279,18 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
           sounds={[task.voicing.notes]}
           satb
           marked={done ? [results.map((r) => !r?.correct)] : undefined}
+          title={sungVoicing ? 'Akkord' : undefined}
           ariaLabel={`Akkord: ${task.voicing.notes.map(germanNameWithOctave).join(', ')}`}
         />
+        {sungVoicing && (
+          <SolutionScore
+            title="Deine Töne"
+            sounds={[sungVoicing]}
+            satb
+            marked={[results.map((r) => !r?.correct)]}
+            ariaLabel={`Deine Töne: ${sungVoicing.map(germanNameWithOctave).join(', ')}`}
+          />
+        )}
       </div>
 
       <div className="play-area card">
@@ -283,6 +301,11 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
         {done && (
           <button onClick={() => playChord(chordMidi)}>
             ▶ Akkord <kbd className="hint">K</kbd>
+          </button>
+        )}
+        {sungVoicing && (
+          <button onClick={playSung}>
+            ▶ Deine Töne <kbd className="hint">T</kbd>
           </button>
         )}
         {pos > 0 && <button onClick={resetSinging}>Neu singen</button>}
@@ -326,13 +349,28 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
                       ) : (
                         <>
                           ✗ falsch: {target}
-                          <span className="small"> – gesungen: {nearestNoteName(freqToMidi(r.freq))}</span>
+                          <span className="small"> – gesungen: {germanName(sungPitch(task.voicing.notes[vi], r, task.root))}</span>{' '}
+                          <button
+                            className="mini"
+                            onClick={() => playChord([toMidi(sungPitch(task.voicing.notes[vi], r, task.root))])}
+                            aria-label={`Gesungenen Ton ${germanName(sungPitch(task.voicing.notes[vi], r, task.root))} anhören`}
+                          >
+                            ▶ gesungen
+                          </button>{' '}
+                          <button
+                            className="mini"
+                            onClick={() => playChord([toMidi(task.voicing.notes[vi])])}
+                            aria-label={`Richtigen Ton ${target} anhören`}
+                          >
+                            ▶ richtig
+                          </button>
                         </>
                       )
                     ) : current ? (
                       mic.state === 'on' ? (
                         <>
                           jetzt singen – gehört: <LivePitch midi={live} />
+                          <span className="muted small"> (danach automatisch weiter)</span>
                         </>
                       ) : (
                         <span className="muted">Mikrofon einschalten, dann singen</span>

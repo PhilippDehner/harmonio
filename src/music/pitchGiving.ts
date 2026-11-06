@@ -1,6 +1,6 @@
 import { freqToMidi, VoiceType } from '../audio/pitchDetect';
 import { ChordType, Inversion } from './chords';
-import { Pitch, germanName, mod, toMidi } from './pitch';
+import { Pitch, germanName, mod, spellForKey, toMidi } from './pitch';
 import { ChordTask, Rng, makeChordTask, pick } from './tasks';
 
 /** Pitch giving: major and minor chords in any inversion. */
@@ -52,6 +52,16 @@ export function evaluateSung(freq: number, expected: number): SungResult {
 const NAMES: [number, number][] = [
   [0, 0], [0, 1], [1, 0], [2, -1], [2, 0], [3, 0], [3, 1], [4, 0], [5, -1], [5, 0], [6, -1], [6, 0],
 ];
+
+/**
+ * The sung note mapped to the written octave of its voice: correct notes
+ * give the written pitch, wrong notes the sung semitone next to it.
+ * Spelled with flats if the chord root has a flat, otherwise with sharps.
+ */
+export function sungPitch(target: Pitch, r: SungResult, root: Pitch): Pitch {
+  if (r.correct) return target;
+  return spellForKey(toMidi(target) + Math.round(r.cents / 100), root.alter < 0 ? -1 : 1);
+}
 
 /** German name of the nearest key, e.g. "Fis", "B", "Es". */
 export function nearestNoteName(midi: number): string {

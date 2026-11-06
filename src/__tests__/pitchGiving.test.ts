@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PitchHold, classifyVoice, detectPitch, freqToMidi, midiToFreq } from '../audio/pitchDetect';
-import { describeIntonation, evaluateSung, expectedMidi, makePitchGivingTask, nearestNoteName } from '../music/pitchGiving';
-import { toMidi } from '../music/pitch';
+import { describeIntonation, evaluateSung, expectedMidi, makePitchGivingTask, nearestNoteName, sungPitch } from '../music/pitchGiving';
+import { germanName, toMidi } from '../music/pitch';
 
 const SR = 48000;
 
@@ -94,5 +94,18 @@ describe('Pitch giving', () => {
     expect(describeIntonation(0)).toBe('genau getroffen');
     expect(describeIntonation(12)).toBe('12 Cent zu hoch');
     expect(describeIntonation(-7)).toBe('7 Cent zu tief');
+  });
+  it('maps sung notes to the written octave', () => {
+    const f3 = { step: 3, alter: 0, octave: 3 }; // f, MIDI 53
+    const flatRoot = { step: 6, alter: -1, octave: 2 };
+    const sharpRoot = { step: 1, alter: 0, octave: 3 };
+    // correct note: written pitch
+    expect(sungPitch(f3, evaluateSung(midiToFreq(53.1), 53), sharpRoot)).toEqual(f3);
+    // sung an octave higher and a semitone too high: written octave, semitone up
+    const up = sungPitch(f3, evaluateSung(midiToFreq(66), 53), sharpRoot);
+    expect(toMidi(up)).toBe(54);
+    expect(germanName(up)).toBe('Fis');
+    expect(germanName(sungPitch(f3, evaluateSung(midiToFreq(54), 53), flatRoot))).toBe('Ges');
+    expect(toMidi(sungPitch(f3, evaluateSung(midiToFreq(50), 53), sharpRoot))).toBe(50);
   });
 });
