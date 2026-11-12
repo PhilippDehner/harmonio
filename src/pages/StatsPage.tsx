@@ -30,24 +30,35 @@ export default function StatsPage() {
 
       <h2>Intervalle</h2>
       {MODES.map((m) => (
-        <details key={m.id} className="card" open={Object.keys(s.intervals[m.id] ?? {}).length > 0}>
+        <details key={m.id} className="card">
           <summary>Wiedergabe {m.label}</summary>
           <DetailTable bucket={s.intervals[m.id]} items={INTERVALS.map((i) => i.id)} labelOf={(id) => intervalById(id).long} />
         </details>
       ))}
 
       <h2>Akkorde</h2>
-      <details className="card" open={Object.keys(s.chords['1'] ?? {}).length > 0}>
+      <details className="card">
         <summary>Stufe 1: nur Akkordtyp</summary>
         <DetailTable bucket={s.chords['1']} items={CHORD_TYPES.map((t) => t.id)} labelOf={chordLabel} />
       </details>
-      <details className="card" open={Object.keys(s.chords['2'] ?? {}).length > 0}>
+      <details className="card">
         <summary>Stufe 2: Typ und Umkehrung</summary>
         <DetailTable bucket={s.chords['2']} items={level2} labelOf={chordLabel} />
       </details>
 
+      <h2>Tonangabe</h2>
+      <details className="card">
+        <summary>Dur- und Mollakkorde</summary>
+        <DetailTable
+          bucket={s.pitchGiving}
+          items={['major', 'minor']}
+          labelOf={(id) => (id === 'major' ? 'Durakkorde' : 'Mollakkorde')}
+        />
+      </details>
+
       <h2>Tonbenennung</h2>
-      <div className="card">
+      <details className="card">
+        <summary>Intervalle und Akkorde</summary>
         <table className="stats">
           <tbody>
             <tr>
@@ -64,10 +75,11 @@ export default function StatsPage() {
             </tr>
           </tbody>
         </table>
-      </div>
+      </details>
 
       <h2>Diktate</h2>
-      <div className="card">
+      <details className="card">
+        <summary>Geprüfte Diktate ({attempts.length})</summary>
         {attempts.length === 0 ? (
           <p className="muted small">Noch keine Diktate geprüft.</p>
         ) : (
@@ -107,12 +119,12 @@ export default function StatsPage() {
             </table>
           </div>
         )}
-      </div>
+      </details>
 
       <h2>Daten löschen</h2>
       <div className="row">
         <button
-          onClick={() => confirm('Statistik der Intervalle und Akkorde löschen?') && resetStats('exercises')}
+          onClick={() => confirm('Statistik der Intervalle, Akkorde und Tonangabe löschen?') && resetStats('exercises')}
         >
           Übungsstatistik löschen
         </button>

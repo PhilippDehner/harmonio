@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import BetaBadge from '../components/BetaBadge';
 import { DEFAULT_A4, MAX_A4, MIN_A4 } from '../audio/tuning';
 import { SING_ORDERS, VOICE_LABEL } from '../music/pitchGiving';
-import { RANGES, RangeLevel, ThemeSetting, exportData, importData, updateSettings, useSettings } from '../storage/store';
+import { PIANO_KEY_SIZES, RANGES, RangeLevel, ThemeSetting, exportData, importData, updateSettings, useSettings } from '../storage/store';
 
 async function shareOrDownload(): Promise<string> {
   const json = JSON.stringify(exportData(), null, 2);
@@ -93,6 +93,20 @@ export default function SettingsPage() {
           ).map(([t, label]) => (
             <button key={t} aria-pressed={settings.theme === t} onClick={() => updateSettings({ theme: t })}>
               {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="card stack">
+        <h2 style={{ marginTop: 0 }}>Klavier (🎹 unten rechts)</h2>
+        <p className="muted small" style={{ margin: 0 }}>
+          Breite der Tasten: Stufe 1 ist am schmalsten (mehr Tasten sichtbar), Stufe 5 am breitesten (leichter zu treffen).
+        </p>
+        <div className="segmented" role="group" aria-label="Tastenbreite">
+          {PIANO_KEY_SIZES.map((n) => (
+            <button key={n} aria-pressed={settings.pianoKeySize === n} onClick={() => updateSettings({ pianoKeySize: n })}>
+              {n}
             </button>
           ))}
         </div>

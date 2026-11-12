@@ -16,12 +16,12 @@ describe('Changelog', () => {
     expect(compareVersions('1.1', '1.1.0')).toBe(0);
   });
   it('returns the entries since a version', () => {
-    expect(changesSince('1.2.0').map((e) => e.version)).toEqual(['1.5.1', '1.5.0', '1.4.0']);
-    expect(changesSince('1.3.0').map((e) => e.version)).toEqual(['1.5.1', '1.5.0', '1.4.0']);
+    expect(changesSince('1.2.0').map((e) => e.version)).toEqual(['1.6.0', '1.5.1', '1.5.0']);
+    expect(changesSince('1.3.0').map((e) => e.version)).toEqual(['1.6.0', '1.5.1', '1.5.0']);
     expect(changesSince(pkg.version)).toEqual([]);
   });
   it('shows at most the last 3 releases', () => {
-    expect(changesSince(null).map((e) => e.version)).toEqual(['1.5.1', '1.5.0', '1.4.0']);
+    expect(changesSince(null).map((e) => e.version)).toEqual(['1.6.0', '1.5.1', '1.5.0']);
     expect(changesSince('1.0.0')).toHaveLength(MAX_SHOWN_RELEASES);
   });
 });

@@ -1,22 +1,34 @@
-import { Counts } from '../storage/store';
+import { Counts, ExerciseKind, totalCounts, useAppData } from '../storage/store';
 
 export function rate(c: { correct: number; wrong: number }): string {
   const total = c.correct + c.wrong;
   return total === 0 ? '–' : `${Math.round((c.correct / total) * 100)} %`;
 }
 
-export function LiveStats({ correct, wrong }: { correct: number; wrong: number }) {
+function StatsLine({ label, title, c }: { label: string; title: string; c: { correct: number; wrong: number } }) {
+  return (
+    <div className="live-stats-line" title={title}>
+      <span className="muted">{label}</span>
+      <span>
+        Richtig: <b>{c.correct}</b>
+      </span>
+      <span>
+        Falsch: <b>{c.wrong}</b>
+      </span>
+      <span>
+        Quote: <b>{rate(c)}</b>
+      </span>
+    </div>
+  );
+}
+
+/** Live counter in an exercise: this session and all-time. */
+export function LiveStats({ kind, session }: { kind: ExerciseKind; session: { correct: number; wrong: number } }) {
+  const { stats } = useAppData();
   return (
     <div className="live-stats" aria-live="polite">
-      <span>
-        Richtig: <b>{correct}</b>
-      </span>
-      <span>
-        Falsch: <b>{wrong}</b>
-      </span>
-      <span>
-        Trefferquote: <b>{rate({ correct, wrong })}</b>
-      </span>
+      <StatsLine label="Sitzung" title="Seit dem Öffnen von Harmonio in diesem Tab" c={session} />
+      <StatsLine label="Gesamt" title="Alle bisherigen Antworten (siehe Statistik)" c={totalCounts(stats, kind)} />
     </div>
   );
 }

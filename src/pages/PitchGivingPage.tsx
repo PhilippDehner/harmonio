@@ -31,8 +31,10 @@ import {
   Settings,
   loadPitchGivingCurrent,
   pitchGivingOptions,
+  recordPitchGiving,
   savePitchGivingCurrent,
   updateSettings,
+  useSessionCounter,
   useSettings,
 } from '../storage/store';
 
@@ -255,11 +257,15 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   const [results, setResults] = useState<Results>(saved?.results ?? [null, null, null, null]);
   const [pos, setPos] = useState(saved?.pos ?? 0);
   const [live, setLive] = useState<number | null>(null);
-  const [session, setSession] = useState({ correct: 0, wrong: 0 });
+  const [session, addSession] = useSessionCounter('pitchGiving');
   const hold = useRef(new PitchHold());
   const posRef = useRef(saved?.pos ?? 0);
   const resultsRef = useRef<Results>(saved?.results ?? [null, null, null, null]);
   const timer = useRef<number | null>(null);
+  /** Only the first attempt counts: set once a wrong note was taken back or the chord was re-sung. */
+  const firstTryFailed = useRef(false);
+  /** The current chord has already been counted in the statistics. */
+  const counted = useRef(false);
   const order = singOrder(task.voicing, task.root, task.type, settings.singOrder);
   const orderRef = useRef(order);
   orderRef.current = order;
@@ -286,15 +292,18 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     updated[vi] = res;
     resultsRef.current = updated;
     setResults(updated);
-    if (finished) {
-      const ok = updated.every((x) => x?.octaveOk);
-      setSession((s) => ({ correct: s.correct + (ok ? 1 : 0), wrong: s.wrong + (ok ? 0 : 1) }));
+    if (finished && !counted.current) {
+      counted.current = true;
+      const ok = !firstTryFailed.current && updated.every((x) => x?.octaveOk);
+      addSession(ok);
+      recordPitchGiving(task.type, ok);
     }
     setPos(posRef.current);
     setLive(null);
   };
 
   const resetSinging = useCallback(() => {
+    if (resultsRef.current.some((r) => r && !r.octaveOk)) firstTryFailed.current = true;
     hold.current.reset();
     posRef.current = 0;
     resultsRef.current = [null, null, null, null];
@@ -308,10 +317,28 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
     stopAll();
     setTask(makePitchGivingTask(optionsRef.current));
     resetSinging();
+    firstTryFailed.current = false;
+    counted.current = false;
     timer.current = window.setTimeout(() => {
       if (isAudioRunning()) playA();
     }, 1000);
   }, [playA, resetSinging]);
+
+  /** Take back the last sung note (only offered if it was not right) and sing it again. */
+  const undoLast = () => {
+    if (posRef.current === 0) return;
+    const vi = orderRef.current[posRef.current - 1];
+    if (resultsRef.current[vi]?.octaveOk !== false) return;
+    firstTryFailed.current = true;
+    hold.current.reset();
+    posRef.current -= 1;
+    const updated = [...resultsRef.current];
+    updated[vi] = null;
+    resultsRef.current = updated;
+    setResults(updated);
+    setPos(posRef.current);
+    setLive(null);
+  };
 
   /** Skip the current chord after asking; skipped chords do not count. */
   const skip = () => {
@@ -356,10 +383,16 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
   // Key signature of the chord's key instead of accidentals on the notes
   const keyFifths = keyFifthsOf(task.root, task.type === 'minor') ?? 0;
 
+  const lastVoice = pos > 0 ? order[pos - 1] : null;
+  const canUndo = lastVoice !== null && results[lastVoice]?.octaveOk === false;
+
   useHotkeys((e, key) => {
     if (key === ' ') {
       e.preventDefault();
       playA();
+    } else if (canUndo && key.toUpperCase() === 'Z') {
+      e.preventDefault();
+      undoLast();
     } else if (!done && key.toUpperCase() === 'N') {
       e.preventDefault();
       skip();
@@ -472,7 +505,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
           </button>
         )}
         <span className="spacer" />
-        {settings.showStats && <LiveStats {...session} />}
+        {settings.showStats && <LiveStats kind="pitchGiving" session={session} />}
       </div>
 
       {mic.error && (
@@ -487,6 +520,15 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
             {order.map((vi, i) => {
               const r = results[vi];
               const current = i === pos && !done;
+              const undoButton =
+                canUndo && vi === lastVoice ? (
+                  <>
+                    {' '}
+                    <button className="mini" onClick={undoLast} title="Diesen Ton zurücknehmen und nochmal singen (zählt nicht als erster Versuch)">
+                      ↶ nochmal <kbd className="hint">Z</kbd>
+                    </button>
+                  </>
+                ) : null;
               const target = germanName(task.voicing.notes[vi]);
               return (
                 <tr key={vi} className={current ? 'current' : r ? { ok: 'ok', octave: 'warn', wrong: 'err' }[sungStatus(r)] : ''}>
@@ -507,6 +549,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
                             {r.octaveShift !== 0 &&
                               ` · ${Math.abs(r.octaveShift) === 1 ? 'eine' : Math.abs(r.octaveShift)} Oktave ${r.octaveShift > 0 ? 'höher' : 'tiefer'} als erwartet`}
                           </span>
+                          {undoButton}
                         </>
                       ) : (
                         <>
@@ -526,6 +569,7 @@ function Exercise({ voice, mic, handler, playA, playChord }: Shared & { voice: V
                           >
                             ▶ richtig
                           </button>
+                          {undoButton}
                         </>
                       )
                     ) : current ? (

@@ -18,7 +18,7 @@ import {
 } from '../music/chords';
 import { germanName, germanNameWithOctave, samePitch, toMidi } from '../music/pitch';
 import { ChordTask, answerChordMidi, answerChordVoicing, chooseAdaptive, makeChordTask } from '../music/tasks';
-import { aggregateStats, getState, recordChord, recordNaming, updateSettings, useAppData } from '../storage/store';
+import { aggregateStats, getState, recordChord, recordNaming, updateSettings, useAppData, useSessionCounter } from '../storage/store';
 
 type Phase = 'answer' | 'naming' | 'done';
 
@@ -64,7 +64,7 @@ export default function ChordsPage() {
   const [typeAnswer, setTypeAnswer] = useState<ChordType | null>(null);
   const [invAnswer, setInvAnswer] = useState<Inversion | null>(null);
   const [namingResult, setNamingResult] = useState<{ correct: boolean; solution: string } | null>(null);
-  const [session, setSession] = useState({ correct: 0, wrong: 0 });
+  const [session, addSession] = useSessionCounter('chords');
   const timer = useRef<number | null>(null);
 
   const tour = useTour('chords', [
@@ -118,7 +118,7 @@ export default function ChordsPage() {
     const givenId = chordAnswerId(type, level === 2 && type !== 'augmented' ? inversion : null);
     const correct = correctId === givenId;
     recordChord(String(level), correctId, correct, correct ? undefined : givenId);
-    setSession((s) => ({ correct: s.correct + (correct ? 1 : 0), wrong: s.wrong + (correct ? 0 : 1) }));
+    addSession(correct);
     setPhase(correct && settings.chordNaming ? 'naming' : 'done');
   }
 
@@ -233,7 +233,7 @@ export default function ChordsPage() {
           </button>
         )}
         <span className="spacer" />
-        {settings.showStats && <LiveStats {...session} />}
+        {settings.showStats && <LiveStats kind="chords" session={session} />}
       </div>
 
       <div id="ch-types" className="answer-grid chords" role="group" aria-label="Akkordtyp">

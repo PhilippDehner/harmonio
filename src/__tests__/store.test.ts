@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, ExportFile, aggregateStats, mergeData, migrateExport } from '../storage/store';
+import { DEFAULT_SETTINGS, ExportFile, aggregateStats, mergeData, migrateExport, totalCounts } from '../storage/store';
 
 const empty = { intervals: {}, chords: {}, naming: { intervals: { correct: 0, wrong: 0 }, chords: { correct: 0, wrong: 0 } } };
 
@@ -90,5 +90,25 @@ describe('Migration of former German identifiers', () => {
   it('is idempotent', () => {
     const once = migrateExport(old);
     expect(migrateExport(once)).toEqual(once);
+  });
+});
+
+describe('Total counts', () => {
+  const stats = {
+    devA: {
+      ...empty,
+      updated: 1,
+      intervals: { ascending: { m3: { correct: 2, wrong: 1 } }, harmonic: { p5: { correct: 1, wrong: 0 } } },
+      chords: { '1': { major: { correct: 3, wrong: 2 } } },
+      naming: { intervals: { correct: 9, wrong: 9 }, chords: { correct: 9, wrong: 9 } },
+    },
+    // Older data without pitch giving
+    devB: { ...empty, updated: 2, intervals: { ascending: { m3: { correct: 1, wrong: 1 } } } },
+    devC: { ...empty, updated: 3, pitchGiving: { major: { correct: 4, wrong: 1 }, minor: { correct: 0, wrong: 2 } } },
+  };
+  it('sums all modes, levels and devices without note naming', () => {
+    expect(totalCounts(stats, 'intervals')).toEqual({ correct: 4, wrong: 2 });
+    expect(totalCounts(stats, 'chords')).toEqual({ correct: 3, wrong: 2 });
+    expect(totalCounts(stats, 'pitchGiving')).toEqual({ correct: 4, wrong: 3 });
   });
 });

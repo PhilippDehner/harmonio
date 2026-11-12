@@ -11,6 +11,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.6.0',
+    date: '2026-11-06',
+    changes: [
+      'Tonangabe: Ein falsch gesungener Ton lässt sich sofort mit „↶ nochmal“ (Taste Z) zurücknehmen und neu singen. In der Statistik zählt nur der erste Versuch.',
+      'Einstellungen: Tastenbreite des ausklappbaren Klaviers (🎹) in fünf Stufen wählbar – schmal für mehr Tasten auf einmal, breit zum leichteren Treffen.',
+      'Der Zähler in Intervallen, Akkorden und Tonangabe zeigt jetzt „Sitzung“ und „Gesamt“. Die Sitzung bleibt beim Seitenwechsel und Neuladen erhalten und beginnt erst in einem neuen Browser-Tab wieder bei null.',
+      'Tonangabe: Ergebnisse werden dauerhaft gespeichert und in der Statistik angezeigt (nach Dur- und Mollakkorden).',
+      'Statistik: Alle Bereiche sind zugeklappt und lassen sich einzeln aufklappen.',
+    ],
+  },
+  {
     version: '1.5.1',
     date: '2026-11-06',
     changes: [
