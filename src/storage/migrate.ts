@@ -113,3 +113,15 @@ export function migrateDictations<T extends AnyRecord>(data: T): T {
 export function migrateTours(tours: string[]): string[] {
   return Array.from(new Set((tours ?? []).map((t) => map(TOURS, t))));
 }
+
+/** Tonsatz data: fills fields missing in older stored data or export files. */
+export function migrateSatz(data: AnyRecord): any {
+  const d = data ?? {};
+  return {
+    attempts: Array.isArray(d.attempts) ? d.attempts : [],
+    progress: d.progress && typeof d.progress === 'object' ? d.progress : {},
+    songs: d.songs && typeof d.songs === 'object' ? d.songs : {},
+    uploads: Array.isArray(d.uploads) ? d.uploads : [],
+    direct: d.direct && typeof d.direct === 'object' ? d.direct : {},
+  };
+}

@@ -3,7 +3,8 @@ import { CATALOG } from '../dictation/catalog';
 import { KIND_LABELS } from '../dictation/model';
 import { CHORD_TYPES, INVERSIONS, chordAnswerId, chordAnswerLabel, ChordType, Inversion } from '../music/chords';
 import { INTERVALS, intervalById } from '../music/intervals';
-import { aggregateStats, resetStats, useAppData } from '../storage/store';
+import { RULE_IDS, RULE_TITLES } from '../satz/rules';
+import { aggregateStats, resetStats, satzFirstChecks, useAppData } from '../storage/store';
 
 const MODES = [
   { id: 'harmonic', label: 'gleichzeitig' },
@@ -23,6 +24,15 @@ export default function StatsPage() {
     t.id === 'augmented' ? [chordAnswerId(t.id, null)] : INVERSIONS.map((i) => chordAnswerId(t.id, i.id)),
   );
   const attempts = [...data.dictations.attempts].sort((a, b) => b.date - a.date);
+  const firstChecks = satzFirstChecks(data.satz);
+  const ruleCounts: Record<string, number> = {};
+  for (const a of firstChecks) for (const [r, n] of Object.entries(a.violations)) ruleCounts[r] = (ruleCounts[r] ?? 0) + n;
+  const analysisErrors = firstChecks.reduce((s2, a) => s2 + a.analysisErrors, 0);
+  const analysisLabels = firstChecks.reduce((s2, a) => s2 + a.analysisLabels, 0);
+  const direct = Object.values(data.satz.direct);
+  const directShown: Record<string, number> = {};
+  for (const d of direct) for (const [r, n] of Object.entries(d.shown)) directShown[r] = (directShown[r] ?? 0) + n;
+  const directSessions = direct.reduce((s2, d) => s2 + d.sessions, 0);
 
   return (
     <div className="stack">
@@ -121,6 +131,61 @@ export default function StatsPage() {
         )}
       </details>
 
+      <h2>Tonsatz</h2>
+      <details className="card">
+        <summary>Regelverstöße bei der ersten Prüfung ({firstChecks.length} Sätze)</summary>
+        {firstChecks.length === 0 ? (
+          <p className="muted small">Noch kein Satz geprüft. Es zählt nur die erste Prüfung eines Satzes (ohne Direktmodus).</p>
+        ) : (
+          <table className="stats">
+            <tbody>
+              {RULE_IDS.filter((r) => ruleCounts[r]).sort((a, b) => ruleCounts[b] - ruleCounts[a]).map((r) => (
+                <tr key={r}>
+                  <td>{RULE_TITLES[r]}</td>
+                  <td className="num">{ruleCounts[r]}×</td>
+                </tr>
+              ))}
+              {RULE_IDS.every((r) => !ruleCounts[r]) && (
+                <tr>
+                  <td colSpan={2}>Keine Regelverstöße.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </details>
+      <details className="card">
+        <summary>Harmonieanalyse</summary>
+        <p className="small" style={{ margin: 0 }}>
+          {analysisLabels === 0
+            ? 'Noch keine Analyse geprüft.'
+            : `${analysisLabels - analysisErrors} von ${analysisLabels} Angaben richtig, ${analysisErrors} falsch (erste Prüfung je Satz).`}
+        </p>
+      </details>
+      <details className="card">
+        <summary>Direktmodus ({directSessions}× bearbeitet)</summary>
+        {Object.keys(directShown).length === 0 ? (
+          <p className="muted small">Im Direktmodus wurden noch keine Fehler angezeigt.</p>
+        ) : (
+          <table className="stats">
+            <thead>
+              <tr>
+                <th>Regel</th>
+                <th>angezeigt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {RULE_IDS.filter((r) => directShown[r]).sort((a, b) => directShown[b] - directShown[a]).map((r) => (
+                <tr key={r}>
+                  <td>{RULE_TITLES[r]}</td>
+                  <td className="num">{directShown[r]}×</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </details>
+
       <h2>Daten löschen</h2>
       <div className="row">
         <button
@@ -132,6 +197,9 @@ export default function StatsPage() {
           onClick={() => confirm('Alle Diktatversuche und angefangenen Diktate löschen?') && resetStats('dictations')}
         >
           Diktate löschen
+        </button>
+        <button onClick={() => confirm('Alle Tonsatz-Prüfungen, angefangenen Sätze und die Direktmodus-Statistik löschen? Hochgeladene Melodien bleiben erhalten.') && resetStats('satz')}>
+          Tonsatz löschen
         </button>
       </div>
     </div>

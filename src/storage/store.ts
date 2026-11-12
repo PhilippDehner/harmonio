@@ -4,7 +4,10 @@ import type { IntervalPlayMode } from '../music/tasks';
 import type { VoiceType } from '../audio/pitchDetect';
 import type { PitchGivingOptions, SingOrder } from '../music/pitchGiving';
 import { DEFAULT_A4, setA4 } from '../audio/tuning';
-import { migrateDictations, migrateSettings, migrateStats, migrateTours } from './migrate';
+import type { SNote, SatzMode } from '../satz/model';
+import type { Transposition } from '../satz/transpose';
+import type { AnalysisView } from '../satz/analysis';
+import { migrateDictations, migrateSatz, migrateSettings, migrateStats, migrateTours } from './migrate';
 
 const PREFIX = 'harmonio:';
 
@@ -77,7 +80,20 @@ export interface Settings {
   pgInversions: boolean;
   /** Key width of the collapsible keyboard, level 1 (narrow) to 5 (wide) */
   pianoKeySize: PianoKeySize;
+  /** Tonsatz: choir or organ setting */
+  satzMode: SatzMode;
+  /** Tonsatz: show rule violations only when checking, or directly while writing */
+  satzCheck: SatzCheckMode;
+  /** Tonsatz: theory of the automatic analysis */
+  satzAnalysisView: AnalysisView;
+  /** Tonsatz: voice for notes in the bass clef */
+  satzLowerVoice: LowerVoiceChoice;
+  /** Tonsatz: input with the score or the keyboard */
+  satzInput: 'score' | 'keyboard';
 }
+
+export type SatzCheckMode = 'end' | 'direct';
+export type LowerVoiceChoice = 'auto' | 'tenor' | 'bass';
 
 export type PianoKeySize = 1 | 2 | 3 | 4 | 5;
 export const PIANO_KEY_SIZES: PianoKeySize[] = [1, 2, 3, 4, 5];
@@ -108,6 +124,11 @@ export const DEFAULT_SETTINGS: Settings = {
   pgWide: false,
   pgInversions: false,
   pianoKeySize: 3,
+  satzMode: 'choir',
+  satzCheck: 'end',
+  satzAnalysisView: 'function',
+  satzLowerVoice: 'auto',
+  satzInput: 'score',
 };
 
 /** Pitch-giving options from the settings. */
@@ -189,6 +210,67 @@ export interface DictationData {
   progress: Record<string, DictationProgress>;
 }
 
+/* ---------- Tonsatz ---------- */
+
+export interface SatzAttempt {
+  id: string;
+  songId: string;
+  date: number;
+  mode: SatzMode;
+  /** Checked in direct mode (own statistics) */
+  direct: boolean;
+  transposition: Transposition | null;
+  /** Alto, tenor, bass in the original key */
+  voices: SNote[][];
+  analysis: Record<number, string>;
+  /** Rule → number of violations */
+  violations: Record<string, number>;
+  analysisErrors: number;
+  analysisLabels: number;
+}
+
+export interface SatzProgress {
+  songId: string;
+  updated: number;
+  /** Alto, tenor, bass in the original key */
+  voices: SNote[][];
+  analysis: Record<number, string>;
+}
+
+export interface SatzSongSettings {
+  transposition: Transposition | null;
+  /** Playback tempo (quarter notes per minute) */
+  tempo: number | null;
+}
+
+export interface SatzUpload {
+  id: string;
+  name: string;
+  xml: string;
+  added: number;
+}
+
+export interface SatzDirectStats {
+  updated: number;
+  /** Rule → how often a violation was shown */
+  shown: Record<string, number>;
+  /** How often songs were worked on in direct mode */
+  sessions: number;
+}
+
+export interface SatzData {
+  attempts: SatzAttempt[];
+  progress: Record<string, SatzProgress>;
+  songs: Record<string, SatzSongSettings>;
+  uploads: SatzUpload[];
+  /** Per device (merged on import by the newer state) */
+  direct: Record<string, SatzDirectStats>;
+}
+
+export function emptySatz(): SatzData {
+  return { attempts: [], progress: {}, songs: {}, uploads: [], direct: {} };
+}
+
 /* ---------- Overall state ---------- */
 
 export interface AppData {
@@ -196,6 +278,7 @@ export interface AppData {
   deviceId: string;
   stats: Record<string, DeviceStats>;
   dictations: DictationData;
+  satz: SatzData;
   tours: string[];
 }
 
@@ -214,6 +297,7 @@ function load(): AppData {
     deviceId: loadDeviceId(),
     stats: migrateStats(readRaw('stats', {})),
     dictations: migrateDictations(read<DictationData>('dictations', { attempts: [], progress: {} })),
+    satz: migrateSatz(readRaw<Partial<SatzData>>('satz', {})),
     tours: migrateTours(readRaw<string[]>('tours', [])),
   };
 }
@@ -255,6 +339,7 @@ function setState(next: AppData) {
   write('settings', state.settings);
   write('stats', state.stats);
   write('dictations', state.dictations);
+  write('satz', state.satz);
   write('tours', state.tours);
   emit();
 }
@@ -383,12 +468,15 @@ export function useSessionCounter(kind: ExerciseKind) {
   return [counts, add] as const;
 }
 
-export function resetStats(kind: 'exercises' | 'dictations' | 'all') {
+export function resetStats(kind: 'exercises' | 'dictations' | 'satz' | 'all') {
   if (kind === 'exercises' || kind === 'all') {
     state = { ...state, stats: {} };
   }
   if (kind === 'dictations' || kind === 'all') {
     state = { ...state, dictations: { attempts: [], progress: {} } };
+  }
+  if (kind === 'satz' || kind === 'all') {
+    state = { ...state, satz: { ...state.satz, attempts: [], progress: {}, direct: {} } };
   }
   setState(state);
 }
@@ -418,6 +506,84 @@ export function dictationStatus(data: DictationData, id: string): 'done' | 'star
   if (data.progress[id]) return 'started';
   if (data.attempts.some((a) => a.dictationId === id)) return 'done';
   return 'new';
+}
+
+/* ---------- Tonsatz ---------- */
+
+function setSatz(patch: Partial<SatzData>) {
+  setState({ ...state, satz: { ...state.satz, ...patch } });
+}
+
+export function saveSatzProgress(p: SatzProgress) {
+  setSatz({ progress: { ...state.satz.progress, [p.songId]: p } });
+}
+
+export function clearSatzProgress(songId: string) {
+  const progress = { ...state.satz.progress };
+  delete progress[songId];
+  setSatz({ progress });
+}
+
+export function addSatzAttempt(a: SatzAttempt) {
+  setSatz({ attempts: [...state.satz.attempts, a] });
+}
+
+export function updateSatzSong(songId: string, patch: Partial<SatzSongSettings>) {
+  const cur = state.satz.songs[songId] ?? { transposition: null, tempo: null };
+  setSatz({ songs: { ...state.satz.songs, [songId]: { ...cur, ...patch } } });
+}
+
+export function newSatzUploadId(): string {
+  return `u-${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
+}
+
+export function addSatzUpload(u: SatzUpload) {
+  setSatz({ uploads: [...state.satz.uploads, u] });
+}
+
+export function removeSatzUpload(id: string) {
+  const progress = { ...state.satz.progress };
+  delete progress[id];
+  const songs = { ...state.satz.songs };
+  delete songs[id];
+  setSatz({ uploads: state.satz.uploads.filter((u) => u.id !== id), progress, songs });
+}
+
+function myDirect(): SatzDirectStats {
+  return state.satz.direct[state.deviceId] ?? { updated: 0, shown: {}, sessions: 0 };
+}
+
+/** Direct mode: a violation was shown (counted once per appearance). */
+export function recordDirectShown(rules: string[]) {
+  if (!rules.length) return;
+  const d = myDirect();
+  const shown = { ...d.shown };
+  for (const r of rules) shown[r] = (shown[r] ?? 0) + 1;
+  setSatz({ direct: { ...state.satz.direct, [state.deviceId]: { ...d, shown, updated: Date.now() } } });
+}
+
+/** Direct mode: a song was worked on. */
+export function recordDirectSession() {
+  const d = myDirect();
+  setSatz({ direct: { ...state.satz.direct, [state.deviceId]: { ...d, sessions: d.sessions + 1, updated: Date.now() } } });
+}
+
+export function satzStatus(data: SatzData, id: string): 'done' | 'started' | 'new' {
+  if (data.attempts.some((a) => a.songId === id)) return 'done';
+  if (data.progress[id]) return 'started';
+  return 'new';
+}
+
+/** Statistics of the first (non-direct) check of each song. */
+export function satzFirstChecks(data: SatzData): SatzAttempt[] {
+  const seen = new Set<string>();
+  const out: SatzAttempt[] = [];
+  for (const a of [...data.attempts].sort((x, y) => x.date - y.date)) {
+    if (a.direct || seen.has(a.songId)) continue;
+    seen.add(a.songId);
+    out.push(a);
+  }
+  return out;
 }
 
 /* ---------- Pitch giving: last open exercise ---------- */
@@ -455,6 +621,8 @@ export interface ExportFile {
   settings: Settings;
   stats: Record<string, DeviceStats>;
   dictations: DictationData;
+  /** Missing in files of older versions */
+  satz?: SatzData;
   tours: string[];
 }
 
@@ -466,6 +634,7 @@ export function exportData(): ExportFile {
     settings: state.settings,
     stats: state.stats,
     dictations: state.dictations,
+    satz: state.satz,
     tours: state.tours,
   };
 }
@@ -504,7 +673,29 @@ export function mergeData(current: Omit<AppData, 'deviceId'>, incoming: ExportFi
     settings,
     stats,
     dictations: { attempts, progress },
+    satz: mergeSatz(current.satz, incoming.satz ?? emptySatz()),
     tours: Array.from(new Set([...current.tours, ...(incoming.tours ?? [])])),
+  };
+}
+
+function mergeSatz(cur: SatzData, inc: SatzData): SatzData {
+  const ids = new Set(cur.attempts.map((a) => a.id));
+  const attempts = [...cur.attempts, ...inc.attempts.filter((a) => !ids.has(a.id))].sort((a, b) => a.date - b.date);
+  const progress = { ...cur.progress };
+  for (const [id, p] of Object.entries(inc.progress)) {
+    if (!progress[id] || p.updated > progress[id].updated) progress[id] = p;
+  }
+  const uploadIds = new Set(cur.uploads.map((u) => u.id));
+  const direct = { ...cur.direct };
+  for (const [dev, d] of Object.entries(inc.direct)) {
+    if (!direct[dev] || d.updated > direct[dev].updated) direct[dev] = d;
+  }
+  return {
+    attempts,
+    progress,
+    songs: { ...cur.songs, ...inc.songs },
+    uploads: [...cur.uploads, ...inc.uploads.filter((u) => !uploadIds.has(u.id))],
+    direct,
   };
 }
 
@@ -515,6 +706,7 @@ export function migrateExport(file: ExportFile): ExportFile {
     settings: migrateSettings(file.settings ?? {}),
     stats: migrateStats(file.stats ?? {}),
     dictations: migrateDictations(file.dictations ?? { attempts: [], progress: {} }),
+    satz: migrateSatz(file.satz ?? {}),
     tours: migrateTours(file.tours ?? []),
   };
 }
