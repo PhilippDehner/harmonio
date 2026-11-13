@@ -177,6 +177,7 @@ function SatzPage({ songId }: { songId: string }) {
   const [message, setMessage] = useState<string | null>(null);
   const [analysisTick, setAnalysisTick] = useState<number | null>(null);
   const [analysisDraft, setAnalysisDraft] = useState('');
+  const [analysisInvalid, setAnalysisInvalid] = useState(false);
   const dur: Duration = { base, dotted, triplet };
   const lowerChoice: LowerVoiceChoice = settings.satzLowerVoice;
   const inputMode = settings.satzInput;
@@ -362,7 +363,6 @@ function SatzPage({ songId }: { songId: string }) {
     if (view === 'solution') return;
     const m = song.measures[hit.measure];
     const tick = snapTick(voices, m, hit.tick, dur);
-    setAnalysisTick(tickForAnalysis(tick));
     if (hit.note) {
       setSelectedId(hit.note.id);
       const n = voices[hit.note.voice].find((x) => x.id === hit.note!.id);
@@ -456,36 +456,54 @@ function SatzPage({ songId }: { songId: string }) {
   }
 
   /* ---------- Analysis ---------- */
-  function tickForAnalysis(tick: number): number {
-    if (!song) return tick;
-    // Snap to the onset of a soprano note or any voice
-    const onsets = Array.from(new Set(voices.flatMap((v) => v.map((n) => n.start)))).sort((a, b) => a - b);
-    let best = onsets[0] ?? 0;
-    for (const o of onsets) if (o <= tick) best = o;
-    return best;
-  }
-  useEffect(() => {
-    if (analysisTick === null) return;
-    setAnalysisDraft(state.analysis[analysisTick] ?? '');
-  }, [analysisTick, state.analysis]);
-  useEffect(() => {
-    if (selected) setAnalysisTick(selected.start);
-  }, [selected]);
+  const analysisOn = settings.satzAnalysisInput && view === 'own';
+  /** One field at every note onset (any voice) and at every existing label */
+  const analysisTicks = useMemo(
+    () =>
+      Array.from(new Set([...voices.flatMap((v) => v.map((n) => n.start)), ...Object.keys(state.analysis).map(Number)])).sort(
+        (a, b) => a - b,
+      ),
+    [voices, state.analysis],
+  );
 
-  function saveAnalysis(text: string) {
+  function editAnalysis(tick: number) {
+    if (tick === analysisTick) return;
+    setAnalysisTick(tick);
+    setAnalysisDraft(state.analysis[tick] ?? '');
+    setAnalysisInvalid(false);
+  }
+
+  function saveAnalysis() {
     if (analysisTick === null) return;
-    const t = text.trim();
+    const t = analysisDraft.trim();
     if (t) {
       const p = parseLabel(t);
       if ('error' in p) {
         flash(p.error);
+        setAnalysisInvalid(true);
         return;
       }
     }
-    const analysis = { ...state.analysis };
-    if (t) analysis[analysisTick] = t;
-    else delete analysis[analysisTick];
-    commit({ lower: state.lower, analysis });
+    if (t !== (state.analysis[analysisTick] ?? '')) {
+      const analysis = { ...state.analysis };
+      if (t) analysis[analysisTick] = t;
+      else delete analysis[analysisTick];
+      commit({ lower: state.lower, analysis });
+    }
+    setAnalysisDraft(t);
+    setAnalysisInvalid(false);
+  }
+
+  /** Quick buttons: change the text of the field being edited */
+  function applyAnalysisButton(b: string) {
+    setAnalysisDraft((d) => {
+      if (b.startsWith('(')) return d.startsWith('(') ? d : `(${d || b.slice(1, -1)})`;
+      if (/^[_0-9]/.test(b)) return d + b;
+      return b;
+    });
+    setAnalysisInvalid(false);
+    // Back into the field (on touch devices the button took the focus)
+    document.querySelector<HTMLInputElement>(`.analysis-field[data-tick="${analysisTick}"]`)?.focus();
   }
 
   /* ---------- Transposition ---------- */
@@ -561,7 +579,7 @@ function SatzPage({ songId }: { songId: string }) {
     { selector: '#sz-tools', title: 'Eingabe', text: 'Notenwert wählen, dann ins Notensystem tippen. Oben ist jede Note Alt; unten wählst du Tenor, Bass oder „automatisch“. Kreuz/B vor dem Tippen oder danach mit ↑/↓ um einen Halbton verschieben.' },
     { selector: '#sz-score', title: 'Notenbild', text: 'Eine Note antippen wählt sie aus: dann kannst du sie verschieben, löschen, binden oder einer anderen Stimme zuweisen.' },
     { selector: '#sz-play', title: 'Anhören', text: 'Den eigenen Satz oder nur die Melodie abspielen (Leertaste). Einzelne Stimmen lassen sich stummschalten, das Tempo ist einstellbar.' },
-    { selector: '#sz-analysis', title: 'Harmonieanalyse', text: 'Optional: Funktionen oder Stufen über den Satz schreiben, z. B. „D7_3“ oder „(D7)“. Sie werden beim Prüfen mitgeprüft.' },
+    { selector: '#sz-analysis', title: 'Harmonieanalyse', text: 'Optional einschalten: Dann stehen unter dem Bass Felder für Funktionen oder Stufen, z. B. „D7_3“ oder „(D7)“. Sie werden beim Prüfen mitgeprüft.' },
     { selector: '#sz-check', title: 'Prüfen', text: 'Regelverstöße werden im Notenbild markiert und erklärt. Danach kannst du weiter korrigieren und erneut prüfen.' },
   ]);
 
@@ -585,6 +603,11 @@ function SatzPage({ songId }: { songId: string }) {
   });
   const ownRows: TextRow[][] = [labelRows, ...(showAuto && everChecked && result ? autoRows(result) : [])];
   const textRows = view === 'solution' ? autoRows(solutionResult) : ownRows;
+  const screenRows = analysisOn ? ownRows.slice(1) : textRows;
+  const labelStatus = (tick: number): 'ok' | 'err' | undefined => {
+    const c = checkValid ? checked!.labels.find((l) => l.tick === tick) : undefined;
+    return c ? (c.ok ? 'ok' : 'err') : undefined;
+  };
   const keyText = keyName(keyFromFifths(song.keyFifths));
   const hasPickup = song.measures.length > 1 && song.measures[0].ticks < song.measures[1].ticks;
   const measureOf = (tick: number) => measureIndexAt(song.measures, tick) + (hasPickup ? 0 : 1);
@@ -654,26 +677,26 @@ function SatzPage({ songId }: { songId: string }) {
           <label htmlFor="sz-transpose">Transponieren:</label>
           <select
             id="sz-transpose"
-            value={transposition?.interval ?? ''}
-            onChange={(e) => changeTransposition(e.target.value ? { interval: e.target.value, up: transposition?.up ?? true } : null)}
+            value={transposition ? `${transposition.interval}:${transposition.up ? 'up' : 'down'}` : ''}
+            onChange={(e) => {
+              const [interval, dir] = e.target.value.split(':');
+              changeTransposition(interval ? { interval, up: dir === 'up' } : null);
+            }}
           >
-            <option value="">Originaltonart</option>
-            {TRANSPOSE_INTERVALS.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.label}
-              </option>
+            <option value="">Originaltonart ({keyName(keyFromFifths(original?.keyFifths ?? song.keyFifths))}-Dur)</option>
+            {([true, false] as const).map((up) => (
+              <optgroup key={String(up)} label={up ? 'aufwärts' : 'abwärts'}>
+                {TRANSPOSE_INTERVALS.map((i) => {
+                  const f = original ? transposedFifths(original.keyFifths, { interval: i.id, up }) : null;
+                  return (
+                    <option key={i.id} value={`${i.id}:${up ? 'up' : 'down'}`} disabled={f === null}>
+                      {i.label} {up ? 'aufwärts' : 'abwärts'} ({f === null ? 'zu viele Vorzeichen' : `${keyName(keyFromFifths(f))}-Dur`})
+                    </option>
+                  );
+                })}
+              </optgroup>
             ))}
           </select>
-          {transposition && (
-            <div className="segmented" role="group" aria-label="Richtung">
-              <button aria-pressed={transposition.up} onClick={() => changeTransposition({ ...transposition, up: true })}>
-                aufwärts
-              </button>
-              <button aria-pressed={!transposition.up} onClick={() => changeTransposition({ ...transposition, up: false })}>
-                abwärts
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -759,8 +782,30 @@ function SatzPage({ songId }: { songId: string }) {
         follow
         showLyrics
         givenColor={view === 'own'}
-        textRows={textRows}
+        textRows={screenRows}
         onHit={view === 'own' ? onHit : undefined}
+        analysisFields={
+          analysisOn
+            ? {
+                ticks: analysisTicks,
+                display: (tick) => (state.analysis[tick] ? formatLabel(state.analysis[tick]) : ''),
+                status: labelStatus,
+                activeTick: analysisTick,
+                draft: analysisDraft,
+                invalid: analysisInvalid,
+                onFocus: editAnalysis,
+                onDraft: (text) => {
+                  setAnalysisDraft(text);
+                  setAnalysisInvalid(false);
+                },
+                onCommit: saveAnalysis,
+                onCancel: () => {
+                  if (analysisTick !== null) setAnalysisDraft(state.analysis[analysisTick] ?? '');
+                  setAnalysisInvalid(false);
+                },
+              }
+            : undefined
+        }
       />
       <p className="muted small" style={{ margin: 0 }}>
         {view === 'solution'
@@ -857,47 +902,34 @@ function SatzPage({ songId }: { songId: string }) {
       </div>
 
       {view === 'own' && (
-        <details className="card stack" id="sz-analysis" open={Object.keys(state.analysis).length > 0 || undefined}>
-          <summary>Harmonieanalyse (optional)</summary>
-          <p className="muted small" style={{ margin: 0 }}>
-            Note oder Stelle im Satz antippen, dann Funktion oder Stufe eingeben. Umkehrungen über den Basston: „_3“ = Terz
-            im Bass. Zwischendominanten in Klammern, z. B. „(D7)“. Tonartwechsel mit Vorsatz, z. B. „G: D7“.
-          </p>
-          {analysisTick === null ? (
-            <p className="small">Erst eine Stelle im Notenbild antippen.</p>
-          ) : (
+        <div className="card stack" id="sz-analysis">
+          <label className="row">
+            <input
+              type="checkbox"
+              checked={settings.satzAnalysisInput}
+              onChange={(e) => {
+                setAnalysisTick(null);
+                updateSettings({ satzAnalysisInput: e.target.checked });
+              }}
+            />
+            <b>Harmonieanalyse eintragen</b> <span className="muted small">(optional)</span>
+          </label>
+          {settings.satzAnalysisInput && (
             <>
-              <div className="row">
-                <span className="small">Stelle: Takt {measureOf(analysisTick)}</span>
-                <input
-                  type="text"
-                  value={analysisDraft}
-                  placeholder="z. B. D7_3"
-                  aria-label="Analyse an dieser Stelle"
-                  onChange={(e) => setAnalysisDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveAnalysis(analysisDraft);
-                  }}
-                  style={{ width: '9em' }}
-                />
-                <button onClick={() => saveAnalysis(analysisDraft)}>Übernehmen</button>
-                <button onClick={() => saveAnalysis('')} disabled={!state.analysis[analysisTick]}>
-                  Entfernen
-                </button>
-                {analysisDraft && <span className="analysis-preview">{formatLabel(analysisDraft)}</span>}
-              </div>
-              <div className="toolbar">
+              <p className="muted small" style={{ margin: 0 }}>
+                Unter dem Bass steht an jedem Notenbeginn ein Feld: antippen und Funktion oder Stufe eingeben, Enter übernimmt.
+                Umkehrungen über den Basston: „_3“ = Terz im Bass. Zwischendominanten in Klammern, z. B. „(D7)“. Tonartwechsel
+                mit Vorsatz, z. B. „G: D7“.
+              </p>
+              <div className="toolbar" role="group" aria-label="Schnelleingabe Analyse">
                 {[...FUNCTION_BUTTONS, ...DEGREE_BUTTONS, ...SUFFIX_BUTTONS].map((b) => (
                   <button
                     key={b}
                     className="small"
-                    onClick={() =>
-                      setAnalysisDraft((d) => {
-                        if (b.startsWith('(')) return d.startsWith('(') ? d : `(${d || b.slice(1, -1)})`;
-                        if (/^[_0-9]/.test(b)) return d + b;
-                        return b;
-                      })
-                    }
+                    disabled={analysisTick === null}
+                    // keep the focus in the field being edited
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => applyAnalysisButton(b)}
                   >
                     {b.startsWith('_') ? `${b.slice(1)} im Bass` : formatLabel(b)}
                   </button>
@@ -905,7 +937,7 @@ function SatzPage({ songId }: { songId: string }) {
               </div>
             </>
           )}
-        </details>
+        </div>
       )}
 
       {view === 'own' && (

@@ -1061,6 +1061,52 @@ button.primary kbd.hint {
 
 .satz-score {
   width: 100%;
+  position: relative;
+}
+
+.analysis-field {
+  position: absolute;
+  box-sizing: border-box;
+  height: 24px;
+  min-width: 18px;
+  padding: 0 3px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--fg);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+}
+
+/* iOS zooms into inputs with a font size below 16px */
+@media (pointer: coarse) {
+  .analysis-field {
+    font-size: 16px;
+    height: 28px;
+  }
+}
+
+.analysis-field:hover {
+  border-style: solid;
+}
+
+.analysis-field:focus {
+  z-index: 2;
+  min-width: 6em;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  outline: none;
+}
+
+.analysis-field.ok {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.analysis-field.err,
+.analysis-field.invalid {
+  color: var(--err);
+  border-color: var(--err);
 }
 
 .satz-score.single-line {
@@ -1072,6 +1118,11 @@ button.primary kbd.hint {
 
 .satz-score .score svg {
   display: block;
+}
+
+.satz-score.single-line .score {
+  width: max-content;
+  overflow: visible;
 }
 
 .satz-score.single-line .score svg {

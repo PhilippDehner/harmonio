@@ -60,6 +60,8 @@ export interface SatzRenderInput {
   showLyrics?: boolean;
   /** Voices drawn grey (e.g. given melody) */
   givenColor?: boolean;
+  /** Ticks that get an analysis input field below the bass staff */
+  analysisSlots?: number[];
 }
 
 export interface StaffLayout {
@@ -85,6 +87,15 @@ export interface SatzLayout {
   width: number;
   height: number;
   notes: { id: string; voice: number; x: number; y: number }[];
+  /** Positions of the analysis input fields (left, top, available width; scaled) */
+  slots: AnalysisSlot[];
+}
+
+export interface AnalysisSlot {
+  tick: number;
+  x: number;
+  y: number;
+  width: number;
 }
 
 const STAFF_OF = [0, 0, 1, 1];
@@ -165,6 +176,8 @@ export function renderSatz(el: HTMLElement, input: SatzRenderInput): SatzLayout 
   const STAFF_GAP = 100 + lyricSpace;
   const SYSTEM_GAP = 40;
   const TOP_PAD = (textTop ? 48 : 18) + textTop;
+  const slotTicks = new Set(input.analysisSlots ?? []);
+  const ANALYSIS_SPACE = slotTicks.size ? 44 : 0;
 
   const measureWidth = (m: Measure, first: boolean, systemIdx: number) =>
     Math.max(80, (m.ticks / 24) * pxq) + 34 + (first ? headerWidth(input.keyFifths, systemIdx === 0) : 0);
@@ -193,7 +206,7 @@ export function renderSatz(el: HTMLElement, input: SatzRenderInput): SatzLayout 
   const lineWidth = input.singleLine
     ? Math.max(logicalAvail, systems[0]?.measures.reduce((a, b) => a + b.width, 0) + 4 || 0)
     : logicalAvail;
-  const systemHeight = TOP_PAD + 2 * STAFF_GAP + SYSTEM_GAP - 30;
+  const systemHeight = TOP_PAD + 2 * STAFF_GAP + SYSTEM_GAP - 30 + ANALYSIS_SPACE;
   const height = systems.length * systemHeight + 10;
   const renderer = new Renderer(el as HTMLDivElement, Renderer.Backends.SVG);
   renderer.resize(lineWidth * scale, height * scale);
@@ -202,7 +215,8 @@ export function renderSatz(el: HTMLElement, input: SatzRenderInput): SatzLayout 
   ctx.setFillStyle(fg);
   ctx.setStrokeStyle(fg);
 
-  const layout: SatzLayout = { measures: [], width: lineWidth * scale, height: height * scale, notes: [] };
+  const layout: SatzLayout = { measures: [], width: lineWidth * scale, height: height * scale, notes: [], slots: [] };
+  const slotRaw: { tick: number; x: number; y: number; end: number }[] = [];
   const vfById = new Map<string, StaveNote>();
   const xById = new Map<string, number>();
   const voiceSorted = input.voices.map((v) => sortByStart(v));
@@ -407,6 +421,15 @@ export function renderSatz(el: HTMLElement, input: SatzRenderInput): SatzLayout 
         ctx.restore();
       }
 
+      // Analysis input fields below the bass staff
+      if (slotTicks.size) {
+        const y = staves[1].getYForLine(4) + 26;
+        for (const t of slotTicks) {
+          if (t < m.start || t >= m.start + m.ticks) continue;
+          slotRaw.push({ tick: t, x: xForTick(t) - 3, y, end: x + w - 2 });
+        }
+      }
+
       // Analysis rows above the soprano
       rows.forEach((row, ri) => {
         ctx.save();
@@ -438,6 +461,14 @@ export function renderSatz(el: HTMLElement, input: SatzRenderInput): SatzLayout 
       x += w;
       layout.measures.push(ml);
     });
+  });
+
+  // Field width: up to the next field on the same line, at most to the end of the measure
+  slotRaw.sort((a, b) => a.y - b.y || a.x - b.x);
+  slotRaw.forEach((sl, i) => {
+    const next = slotRaw[i + 1];
+    const end = next && next.y === sl.y ? Math.min(next.x - 2, sl.end + 40) : sl.end;
+    layout.slots.push({ tick: sl.tick, x: sl.x * scale, y: sl.y * scale, width: Math.max(18, end - sl.x) * scale });
   });
 
   // Ties

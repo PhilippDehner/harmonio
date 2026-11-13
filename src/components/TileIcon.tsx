@@ -25,12 +25,12 @@ const ICONS: Record<TileIconKind, Icon> = {
   mono: { treble: ['g/4', 'b/4', 'a/4', 'e/5', 'd/5'].map(q) },
   // two voices on two staves
   two: { treble: ['e/4', 'f/4', 'g/4', 'e/4'].map(q), bass: ['c/3', 'd/3', 'b/2', 'c/3'].map(q) },
-  // four-part chorale I–IV–I, only the bass in bass clef
-  // melody with chords below (four-part setting)
+  // four-part setting I–IV–V–I: soprano/alto in treble, tenor/bass in bass clef
   satz: {
-    treble: [w('e/4', 'g/4', 'c/5'), w('f/4', 'a/4', 'c/5'), w('d/4', 'g/4', 'b/4'), w('e/4', 'g/4', 'c/5')],
-    bass: [w('c/3'), w('f/2'), w('g/2'), w('c/3')],
+    treble: [w('e/4', 'c/5'), w('f/4', 'c/5'), w('d/4', 'b/4'), w('e/4', 'c/5')],
+    bass: [w('c/3', 'g/3'), w('f/2', 'a/3'), w('g/2', 'g/3'), w('c/3', 'g/3')],
   },
+  // four-part chorale I–IV–I, only the bass in bass clef
   four: {
     treble: [w('g/4', 'c/5', 'e/5'), w('a/4', 'c/5', 'f/5'), w('g/4', 'c/5', 'e/5')],
     bass: [w('c/3'), w('f/2'), w('c/3')],
