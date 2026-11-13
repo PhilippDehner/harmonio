@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, ExportFile, aggregateStats, mergeData, migrateExport, totalCounts } from '../storage/store';
+import { DEFAULT_SETTINGS, ExportFile, aggregateStats, emptySatz, mergeData, migrateExport, satzFirstChecks, totalCounts } from '../storage/store';
+
+function satzAttempt(id: string, songId: string, date: number, direct: boolean) {
+  return { id, songId, date, mode: 'choir' as const, direct, transposition: null, voices: [], analysis: {}, violations: { 'parallel-fifths': 1 }, analysisErrors: 0, analysisLabels: 0 };
+}
 
 const empty = { intervals: {}, chords: {}, naming: { intervals: { correct: 0, wrong: 0 }, chords: { correct: 0, wrong: 0 } } };
 
@@ -11,6 +15,12 @@ describe('Export and import', () => {
     dictations: {
       attempts: [{ id: 'a1', dictationId: 'monophonic-1', date: 5, mode: 'paper' as const, pitchErrors: null, rhythmErrors: null, followErrors: null, input: null }],
       progress: { 'monophonic-2': { dictationId: 'monophonic-2', updated: 100, mode: 'score' as const, input: [], position: 3, introPlayed: true } },
+    },
+    satz: {
+      ...emptySatz(),
+      attempts: [satzAttempt('s1', 'b-01', 10, false)],
+      uploads: [{ id: 'u-1', name: 'Eigene', xml: '<x/>', added: 1 }],
+      direct: { devA: { updated: 10, shown: { 'parallel-fifths': 2 }, sessions: 1 } },
     },
     tours: ['intervals'],
   };
@@ -41,6 +51,27 @@ describe('Export and import', () => {
     expect(m.tours.sort()).toEqual(['dictation', 'intervals']);
     // devA: own (newer) state is kept, devB is added → no double counting
     expect(aggregateStats(m.stats).intervals.ascending.m3).toMatchObject({ correct: 6, wrong: 1 });
+  });
+
+  it('merges Tonsatz data and counts only the first check per song', () => {
+    const inc: ExportFile = {
+      ...incoming,
+      satz: {
+        ...emptySatz(),
+        attempts: [satzAttempt('s1', 'b-01', 10, false), satzAttempt('s2', 'b-01', 20, false), satzAttempt('s3', 'b-02', 5, true)],
+        uploads: [{ id: 'u-1', name: 'Eigene', xml: '<x/>', added: 1 }, { id: 'u-2', name: 'Neu', xml: '<y/>', added: 2 }],
+        direct: { devA: { updated: 5, shown: {}, sessions: 9 }, devB: { updated: 1, shown: { hidden: 1 }, sessions: 1 } },
+      },
+    };
+    const m = mergeData(current, inc);
+    expect(m.satz.attempts.map((a) => a.id)).toEqual(['s3', 's1', 's2']);
+    expect(m.satz.uploads.map((u) => u.id)).toEqual(['u-1', 'u-2']);
+    expect(m.satz.direct.devA.sessions).toBe(1);
+    expect(m.satz.direct.devB.sessions).toBe(1);
+    expect(satzFirstChecks(m.satz).map((a) => a.id)).toEqual(['s1']);
+    // Older export files without Tonsatz data
+    const old = mergeData(current, migrateExport({ ...incoming, satz: undefined }));
+    expect(old.satz.attempts.length).toBe(1);
   });
 
   it('importing the same file again counts nothing twice', () => {

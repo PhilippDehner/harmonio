@@ -1056,3 +1056,109 @@ button.primary kbd.hint {
     padding: 4px 6px;
   }
 }
+
+/* ---------- Tonsatz ---------- */
+
+.satz-score {
+  width: 100%;
+}
+
+.satz-score.single-line {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+  border-radius: 8px;
+}
+
+.satz-score .score svg {
+  display: block;
+}
+
+.satz-score.single-line .score svg {
+  max-width: none;
+}
+
+.rule-examples {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.rule-example {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rule-card.focus {
+  outline: 2px solid var(--accent);
+}
+
+.rule-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.text-err {
+  color: var(--err);
+}
+
+.text-ok {
+  color: var(--ok);
+}
+
+.plain-list {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+}
+
+.plain-list li {
+  padding: 3px 0;
+}
+
+.violations li.active {
+  background: var(--accent-soft);
+  border-radius: 4px;
+}
+
+.violations .link-button {
+  text-align: left;
+}
+
+.analysis-preview {
+  font-size: 1.1rem;
+  min-width: 3em;
+}
+
+.satz-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.satz-list li > a {
+  flex: 1;
+}
+
+.tag-own {
+  margin-left: 0.5em;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+}
+
+.rule-card {
+  scroll-margin-top: 72px;
+}
+
+/* Alpha label: early test version (stronger warning than beta) */
+.alpha-badge {
+  border-color: var(--warn);
+  color: var(--warn);
+  background: var(--warn-soft);
+}

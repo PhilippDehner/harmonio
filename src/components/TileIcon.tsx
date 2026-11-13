@@ -3,7 +3,7 @@ import { Formatter, Renderer, Stave, StaveConnector, StaveNote, Voice } from 've
 
 /** Small music examples for the home page tiles (VexFlow, follows the text color). */
 
-export type TileIconKind = 'interval' | 'chord' | 'pitch' | 'ear' | 'mono' | 'two' | 'four';
+export type TileIconKind = 'interval' | 'chord' | 'pitch' | 'ear' | 'mono' | 'two' | 'four' | 'satz';
 
 /** One note value: pitches (VexFlow notation) and duration. */
 type Ev = { keys: string[]; d: 'w' | 'q' };
@@ -26,6 +26,11 @@ const ICONS: Record<TileIconKind, Icon> = {
   // two voices on two staves
   two: { treble: ['e/4', 'f/4', 'g/4', 'e/4'].map(q), bass: ['c/3', 'd/3', 'b/2', 'c/3'].map(q) },
   // four-part chorale I–IV–I, only the bass in bass clef
+  // melody with chords below (four-part setting)
+  satz: {
+    treble: [w('e/4', 'g/4', 'c/5'), w('f/4', 'a/4', 'c/5'), w('d/4', 'g/4', 'b/4'), w('e/4', 'g/4', 'c/5')],
+    bass: [w('c/3'), w('f/2'), w('g/2'), w('c/3')],
+  },
   four: {
     treble: [w('g/4', 'c/5', 'e/5'), w('a/4', 'c/5', 'f/5'), w('g/4', 'c/5', 'e/5')],
     bass: [w('c/3'), w('f/2'), w('c/3')],

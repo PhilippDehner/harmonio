@@ -10,8 +10,13 @@ import DictationListPage from './pages/DictationListPage';
 import StatsPage from './pages/StatsPage';
 import SettingsPage from './pages/SettingsPage';
 
-// Load music notation (VexFlow) only when a dictation is opened
+// Load music notation (VexFlow) only when a dictation or setting is opened
 const DictationPage = lazy(() => import('./pages/DictationPage'));
+const SatzListPage = lazy(() => import('./pages/SatzListPage'));
+const SatzPage = lazy(() => import('./pages/SatzPage'));
+const SatzRulesPage = lazy(() => import('./pages/SatzRulesPage'));
+
+const loading = <p>Lade …</p>;
 
 export default function App() {
   return (
@@ -32,6 +37,10 @@ export default function App() {
               </Suspense>
             }
           />
+          <Route path="satz" element={<Suspense fallback={loading}><SatzListPage /></Suspense>} />
+          <Route path="satz/lied/:songId" element={<Suspense fallback={loading}><SatzPage /></Suspense>} />
+          <Route path="satz/regeln" element={<Suspense fallback={loading}><SatzRulesPage /></Suspense>} />
+          <Route path="satz/regeln/:ruleId" element={<Suspense fallback={loading}><SatzRulesPage /></Suspense>} />
           <Route path="stats" element={<StatsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Home />} />
