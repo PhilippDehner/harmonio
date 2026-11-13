@@ -654,26 +654,26 @@ function SatzPage({ songId }: { songId: string }) {
           <label htmlFor="sz-transpose">Transponieren:</label>
           <select
             id="sz-transpose"
-            value={transposition?.interval ?? ''}
-            onChange={(e) => changeTransposition(e.target.value ? { interval: e.target.value, up: transposition?.up ?? true } : null)}
+            value={transposition ? `${transposition.interval}:${transposition.up ? 'up' : 'down'}` : ''}
+            onChange={(e) => {
+              const [interval, dir] = e.target.value.split(':');
+              changeTransposition(interval ? { interval, up: dir === 'up' } : null);
+            }}
           >
-            <option value="">Originaltonart</option>
-            {TRANSPOSE_INTERVALS.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.label}
-              </option>
+            <option value="">Originaltonart ({keyName(keyFromFifths(original?.keyFifths ?? song.keyFifths))}-Dur)</option>
+            {([true, false] as const).map((up) => (
+              <optgroup key={String(up)} label={up ? 'aufwärts' : 'abwärts'}>
+                {TRANSPOSE_INTERVALS.map((i) => {
+                  const f = original ? transposedFifths(original.keyFifths, { interval: i.id, up }) : null;
+                  return (
+                    <option key={i.id} value={`${i.id}:${up ? 'up' : 'down'}`} disabled={f === null}>
+                      {i.label} {up ? 'aufwärts' : 'abwärts'} ({f === null ? 'zu viele Vorzeichen' : `${keyName(keyFromFifths(f))}-Dur`})
+                    </option>
+                  );
+                })}
+              </optgroup>
             ))}
           </select>
-          {transposition && (
-            <div className="segmented" role="group" aria-label="Richtung">
-              <button aria-pressed={transposition.up} onClick={() => changeTransposition({ ...transposition, up: true })}>
-                aufwärts
-              </button>
-              <button aria-pressed={!transposition.up} onClick={() => changeTransposition({ ...transposition, up: false })}>
-                abwärts
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
