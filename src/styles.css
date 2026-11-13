@@ -1074,6 +1074,11 @@ button.primary kbd.hint {
   display: block;
 }
 
+.satz-score.single-line .score {
+  width: max-content;
+  overflow: visible;
+}
+
 .satz-score.single-line .score svg {
   max-width: none;
 }
