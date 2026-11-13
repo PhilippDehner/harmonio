@@ -86,6 +86,8 @@ export interface Settings {
   satzCheck: SatzCheckMode;
   /** Tonsatz: theory of the automatic analysis */
   satzAnalysisView: AnalysisView;
+  /** Tonsatz: edit the own harmonic analysis in text fields below the score */
+  satzAnalysisInput: boolean;
   /** Tonsatz: voice for notes in the bass clef */
   satzLowerVoice: LowerVoiceChoice;
   /** Tonsatz: input with the score or the keyboard */
@@ -127,6 +129,7 @@ export const DEFAULT_SETTINGS: Settings = {
   satzMode: 'choir',
   satzCheck: 'end',
   satzAnalysisView: 'function',
+  satzAnalysisInput: false,
   satzLowerVoice: 'auto',
   satzInput: 'score',
 };
