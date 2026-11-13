@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { unlockAudio } from '../audio/engine';
-import BetaBadge from '../components/BetaBadge';
+import BetaBadge, { AlphaBadge } from '../components/BetaBadge';
 import TileIcon, { TileIconKind } from '../components/TileIcon';
 
 export interface Tile {
@@ -8,6 +8,8 @@ export interface Tile {
   tag?: string;
   /** Feature still being tested */
   beta?: boolean;
+  /** Feature at an early stage */
+  alpha?: boolean;
   title: string;
   text: string;
   icon: TileIconKind;
@@ -31,6 +33,7 @@ export function Tiles({ tiles }: { tiles: Tile[] }) {
           <h2>
             {t.title}
             {t.beta && <BetaBadge />}
+            {t.alpha && <AlphaBadge />}
           </h2>
           <p>{t.text}</p>
         </Link>

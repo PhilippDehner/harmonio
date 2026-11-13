@@ -14,7 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: '1.7.0',
     date: '2026-11-12',
     changes: [
-      'Neu (Beta): Tonsatz – zu einer vorgegebenen Melodie Alt, Tenor und Bass als Chor- oder Orgelsatz schreiben. Harmonio prüft den Satz automatisch: Parallelen, verdeckte Parallelen, Stimmkreuzung, Abstände, Stimmumfänge, Leitton- und Septauflösung, Verdopplungen, Quartsextakkorde, Vorhalte und Schluss.',
+      'Neu (Alpha, frühe Testversion): Tonsatz – zu einer vorgegebenen Melodie Alt, Tenor und Bass als Chor- oder Orgelsatz schreiben. Harmonio prüft den Satz automatisch: Parallelen, verdeckte Parallelen, Stimmkreuzung, Abstände, Stimmumfänge, Leitton- und Septauflösung, Verdopplungen, Quartsextakkorde, Vorhalte und Schluss.',
       'Tonsatz: Fehler werden im Notenbild markiert und erklärt – wahlweise erst beim Prüfen oder direkt während der Eingabe. Von jedem Fehler geht es zur passenden Regel mit falschem und richtigem Hörbeispiel.',
       'Tonsatz: Optionale Harmonieanalyse in Funktions- oder Stufentheorie, die mitgeprüft wird; Beispiellösungen mit automatischer Analyse.',
       'Tonsatz: Melodie transponieren, Stimmen stummschalten, Tempo wählen, eigene MusicXML-Melodien hochladen sowie Export als MusicXML und PDF.',

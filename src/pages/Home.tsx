@@ -16,7 +16,7 @@ const AREAS: Tile[] = [
   },
   {
     to: '/satz',
-    beta: true,
+    alpha: true,
     title: 'Tonsatz',
     text: 'Zu einer Melodie einen vierstimmigen Chor- oder Orgelsatz schreiben – mit automatischer Regelprüfung.',
     icon: 'satz',

@@ -9,6 +9,26 @@ export default function BetaBadge() {
   );
 }
 
+/** Marks a feature at an early stage: incomplete, may still change substantially. */
+export function AlphaBadge() {
+  return (
+    <span className="beta-badge alpha-badge" title="Alpha: frühe Testversion – noch unvollständig, kann sich stark ändern.">
+      Alpha
+    </span>
+  );
+}
+
+/** Notice for the four-part setting (Tonsatz) in its alpha stage. */
+export function SatzAlphaNotice() {
+  return (
+    <BetaNotice>
+      Der Tonsatz ist eine frühe Testversion (Alpha): Funktionen können noch unvollständig sein oder sich stark ändern.
+      Die automatische Erkennung von Harmonien, akkordfremden Tönen und Modulationen kann in Einzelfällen anders deuten
+      als eine Lehrkraft.
+    </BetaNotice>
+  );
+}
+
 /** Short notice shown on beta pages. Defaults to the pitch-giving text. */
 export function BetaNotice({ children }: { children?: ReactNode }) {
   return (

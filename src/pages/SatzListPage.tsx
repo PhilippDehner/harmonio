@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import BetaBadge from '../components/BetaBadge';
+import { AlphaBadge, SatzAlphaNotice } from '../components/BetaBadge';
 import { pickRandomSong, songEntries } from '../satz/catalog';
 import { MODE_LABELS, SatzMode } from '../satz/model';
 import { SongFormatError, parseSongXml } from '../satz/musicxml';
@@ -34,16 +34,13 @@ export default function SatzListPage() {
     <div className="stack">
       <h1>
         Tonsatz
-        <BetaBadge />
+        <AlphaBadge />
       </h1>
       <p>
         Zu einer vorgegebenen Melodie schreibst du Alt, Tenor und Bass – als Chor- oder Orgelsatz. Harmonio prüft den Satz
         nach den Regeln des Tonsatzes und zeigt Fehler im Notenbild.
       </p>
-      <p className="muted small">
-        Der Tonsatz ist noch in Erprobung. Die automatische Erkennung von Harmonien, akkordfremden Tönen und Modulationen
-        kann in Einzelfällen anders deuten als eine Lehrkraft.
-      </p>
+      <SatzAlphaNotice />
 
       <div className="card stack">
         <div className="toolbar">

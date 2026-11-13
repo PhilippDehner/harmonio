@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { isPlaying, onAudioState, play, playKey, stopAll, transportSeconds } from '../audio/engine';
-import BetaBadge from '../components/BetaBadge';
+import { AlphaBadge, SatzAlphaNotice } from '../components/BetaBadge';
 import { useHotkeys } from '../components/hotkeys';
 import Piano from '../components/Piano';
 import { useTour } from '../components/Tour';
@@ -609,7 +609,7 @@ function SatzPage({ songId }: { songId: string }) {
       <div className="row">
         <h1 style={{ margin: 0 }}>
           {song.title}
-          <BetaBadge />
+          <AlphaBadge />
         </h1>
         <span className="spacer" />
         <Link className="btn" to="/satz">
@@ -622,6 +622,8 @@ function SatzPage({ songId }: { songId: string }) {
           Hilfe
         </button>
       </div>
+
+      <SatzAlphaNotice />
 
       <div className="card small">
         {keyText}-Dur · {song.beats}/{song.beatType}-Takt · {MODE_LABELS[mode]}
