@@ -103,7 +103,7 @@ export const RULE_INFO: RuleInfo[] = [
     id: 'leading-tone',
     title: 'Leittonauflösung',
     text:
-      'Der Leitton (7. Stufe, in C-Dur das h) strebt einen Halbton aufwärts zum Grundton. In den Außenstimmen (Sopran und Bass) muss er bei Dominante → Tonika aufgelöst werden; in den Mittelstimmen darf er zur Quinte abspringen. Das gilt auch für Zwischendominanten.',
+      'Der Leitton (7. Stufe, in C-Dur das h) strebt einen Halbton aufwärts zum Grundton. Bei Dominante → Tonika (oder Trugschluss) muss er in jeder Stimme aufgelöst werden, auch in den Mittelstimmen. Das gilt auch für Zwischendominanten. Ein verdoppelter Leitton führt deshalb zwangsläufig zu Oktavparallelen.',
     wrong: { voices: ['B4/h G4/h', 'D4/h E4/h', 'G3/h G3/h', 'G2/h C3/h'], caption: 'G-Dur → C-Dur. Sopran h′ → g′.' },
     right: { voices: ['B4/h C5/h', 'D4/h E4/h', 'G3/h G3/h', 'G2/h C3/h'], caption: 'G-Dur → C-Dur. Sopran h′ → c″.' },
     fragment: true,
@@ -113,17 +113,8 @@ export const RULE_INFO: RuleInfo[] = [
     title: 'Septauflösung',
     text:
       'Die Septime eines Septakkords (z. B. f im G7) wird schrittweise abwärts aufgelöst. Ausnahme: Übernimmt der Bass den Auflösungston, darf die Septime einen Schritt aufwärts gehen.',
-    wrong: { voices: ['D5/h C5/h', 'F4/h G4/h', 'B3/h E4/h', 'G2/h C3/h'], caption: 'G7 → C-Dur. Alt f′ → g′.' },
-    right: { voices: ['D5/h C5/h', 'F4/h E4/h', 'B3/h G3/h', 'G2/h C3/h'], caption: 'G7 → C-Dur. Alt f′ → e′.' },
-    fragment: true,
-  },
-  {
-    id: 'doubling',
-    title: 'Verdopplung',
-    text:
-      'In Dur- und Molldreiklängen in Grundstellung wird bevorzugt der Grundton verdoppelt. Der Leitton und die Septime dürfen nie verdoppelt werden.',
-    wrong: { voices: ['B4/w', 'D4/w', 'B3/w', 'G2/w'], caption: 'G-Dur mit h′ im Sopran und h im Tenor (Leitton verdoppelt).' },
-    right: { voices: ['B4/w', 'D4/w', 'G3/w', 'G2/w'], caption: 'G-Dur mit G im Bass und g im Tenor, h′ nur einmal.' },
+    wrong: { voices: ['D5/h E5/h', 'F4/h G4/h', 'B3/h C4/h', 'G2/h C3/h'], caption: 'G7 → C-Dur. Alt f′ → g′.' },
+    right: { voices: ['D5/h C5/h', 'F4/h E4/h', 'B3/h C4/h', 'G2/h C3/h'], caption: 'G7 → C-Dur. Alt f′ → e′.' },
     fragment: true,
   },
   {
@@ -132,7 +123,7 @@ export const RULE_INFO: RuleInfo[] = [
     text:
       'Der letzte Akkord des Satzes ist die Tonika in Grundstellung, der Bass endet also auf dem Grundton der Tonart. Davor steht die Dominante (oder die Subdominante).',
     wrong: { voices: ['D5/h C5/h', 'G4/h G4/h', 'B3/h C4/h', 'G2/h E3/h'], caption: 'Schlussakkord C-Dur mit e im Bass.' },
-    right: { voices: ['D5/h C5/h', 'G4/h G4/h', 'B3/h E4/h', 'G2/h C3/h'], caption: 'Schlussakkord C-Dur mit c im Bass.' },
+    right: { voices: ['D5/h C5/h', 'G4/h E4/h', 'B3/h C4/h', 'G2/h C3/h'], caption: 'Schlussakkord C-Dur mit c im Bass.' },
     fragment: false,
   },
   {
@@ -174,7 +165,7 @@ export const RULE_INFO: RuleInfo[] = [
     text:
       'Akkordfremde Töne sind als Durchgang, Wechselnote, Vorausnahme oder Vorhalt erlaubt. Ein Vorhalt muss vorbereitet sein: Derselbe Ton erklingt vorher in derselben Stimme (gehalten oder wiederholt) und löst sich dann schrittweise auf.',
     wrong: {
-      voices: ['D5/h C5/h', 'D4/h F4/q E4/q', 'B3/h G3/h', 'G2/h C3/h'],
+      voices: ['D5/h C5/h', 'D4/h F4/q E4/q', 'B3/h C4/h', 'G2/h C3/h'],
       caption: 'Alt springt ins f′ (Quartvorhalt ohne Vorbereitung).',
     },
     right: {

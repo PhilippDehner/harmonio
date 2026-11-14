@@ -30,7 +30,7 @@ describe('rules', () => {
     'C3/h G2/h C3/h',
   ];
   it('correct cadence: no violations', () => {
-    expect(rules(['E5/h D5/h C5/w', 'G4/h G4/h G4/w', 'C4/h B3/h E4/w', 'C3/h G2/h C3/w'])).toEqual([]);
+    expect(rules(['E5/h D5/h C5/w', 'G4/h G4/h E4/w', 'C4/h B3/h C4/w', 'C3/h G2/h C3/w'])).toEqual([]);
   });
   it('parallel fifths', () => {
     expect(rules(['E5/h F5/h', 'G4/h A4/h', 'C4/h D4/h', 'C3/h D3/h'])).toContain('parallel-fifths');

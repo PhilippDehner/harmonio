@@ -28,7 +28,6 @@ export type RuleId =
   | 'range'
   | 'leading-tone'
   | 'seventh'
-  | 'doubling'
   | 'final'
   | 'chord'
   | 'complete'
@@ -45,7 +44,6 @@ export const RULE_IDS: RuleId[] = [
   'range',
   'leading-tone',
   'seventh',
-  'doubling',
   'final',
   'chord',
   'complete',
@@ -63,7 +61,6 @@ export const RULE_TITLES: Record<RuleId, string> = {
   range: 'Stimmumfang',
   'leading-tone': 'Leittonauflösung',
   seventh: 'Septauflösung',
-  doubling: 'Verdopplung',
   final: 'Schluss',
   chord: 'Erlaubte Akkorde',
   complete: 'Vollständige Akkorde',
@@ -689,13 +686,13 @@ export function checkSatz(input: CheckInput): CheckResult {
     const lastS = harmonyNotes(h, 'last');
     const ticksOf = (hh: Harmony) => slices.slice(hh.first, hh.last + 1).map((s) => s.tick);
 
-    // Leading tone in outer voices
+    // Leading tone (all voices)
     if (next && isDominant(x, h.key)) {
       const r = resolution(x, next.chord!);
       if (r) {
         const lt = leadingTonePc(x);
         const firstNext = harmonyNotes(next, 'first');
-        for (const v of [SOPRANO, BASS]) {
+        for (let v = 0; v < 4; v++) {
           const n = lastS.notes[v];
           if (!n || lastS.member[v] === null || mod(midi(n), 12) !== lt) continue;
           const q = firstNext.notes[v];
@@ -713,7 +710,7 @@ export function checkSatz(input: CheckInput): CheckResult {
       }
     }
 
-    // Seventh resolution and doubling of the seventh
+    // Seventh resolution
     if (x.seventh) {
       for (let v = 0; v < 4; v++) {
         const n = lastS.notes[v];
@@ -741,28 +738,6 @@ export function checkSatz(input: CheckInput): CheckResult {
             ticks: firstNext ? [lastS.tick, firstNext.tick] : [lastS.tick],
           });
         }
-      }
-    }
-
-    // Doubling (per slice)
-    for (let si = h.first; si <= h.last; si++) {
-      const s = slices[si];
-      const ids = (pcWanted: number, member?: Member) =>
-        s.notes
-          .map((n, v) => ({ n, v }))
-          .filter(
-            ({ n, v }) => n && s.member[v] !== null && mod(midi(n), 12) === pcWanted && (!member || s.member[v] === member),
-          )
-          .map(({ n }) => n!.id);
-      if (x.seventh) {
-        const sev = ids(pc(memberName(x, 'seventh')), 'seventh');
-        if (sev.length > 1)
-          add({ rule: 'doubling', message: 'Die Septime ist verdoppelt.', notes: sev, lines: [], ticks: [s.tick] }, `dbl7:${h.index}`);
-      }
-      if (isDominant(x, h.key)) {
-        const lt = ids(leadingTonePc(x));
-        if (lt.length > 1)
-          add({ rule: 'doubling', message: 'Der Leitton ist verdoppelt.', notes: lt, lines: [], ticks: [s.tick] }, `dblLt:${h.index}`);
       }
     }
 
