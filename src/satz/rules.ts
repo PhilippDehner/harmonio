@@ -572,7 +572,8 @@ export function checkSatz(input: CheckInput): CheckResult {
   }
 
   /* Crossing and spacing */
-  const maxGap = [12, 12, 19];
+  /* Tenor–bass spacing is unrestricted */
+  const maxGap = [12, 12, Infinity];
   for (const s of slices) {
     for (let v = 0; v < 3; v++) {
       const up = s.notes[v];
@@ -590,11 +591,10 @@ export function checkSatz(input: CheckInput): CheckResult {
           `crossing:${up.id}:${low.id}`,
         );
       } else if (midi(up) - midi(low) > maxGap[v]) {
-        const limit = v === 2 ? 'eine Duodezime' : 'eine Oktave';
         add(
           {
             rule: 'spacing',
-            message: `Abstand zwischen ${pairName(v, v + 1)} größer als ${limit}.`,
+            message: `Abstand zwischen ${pairName(v, v + 1)} größer als eine Oktave.`,
             notes: [up.id, low.id],
             lines: [],
             ticks: [s.tick],

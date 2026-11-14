@@ -85,7 +85,7 @@ export const RULE_INFO: RuleInfo[] = [
     id: 'spacing',
     title: 'Abstand zwischen den Stimmen',
     text:
-      'Zwischen Sopran und Alt sowie zwischen Alt und Tenor darf höchstens eine Oktave liegen. Zwischen Tenor und Bass ist ein größerer Abstand erlaubt (bis zur Duodezime). So bleibt der Klang geschlossen.',
+      'Zwischen Sopran und Alt sowie zwischen Alt und Tenor darf höchstens eine Oktave liegen. Zwischen Tenor und Bass gibt es keine Beschränkung. So bleibt der Klang in den Oberstimmen geschlossen.',
     wrong: { voices: ['E5/w', 'C4/w', 'G3/w', 'C3/w'], caption: 'C-Dur mit Sopran e″, Alt c′ (Abstand größer als eine Oktave).' },
     right: { voices: ['E5/w', 'G4/w', 'C4/w', 'C3/w'], caption: 'C-Dur mit Sopran e″, Alt g′, Tenor c′, Bass c.' },
     fragment: true,
