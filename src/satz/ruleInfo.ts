@@ -72,12 +72,12 @@ export const RULE_INFO: RuleInfo[] = [
     text:
       'Eine tiefere Stimme darf nicht über eine höhere Stimme steigen (z. B. Alt über Sopran). Das gilt im Orgelsatz und vorerst auch im Chorsatz. Gleiche Töne (Einklang) sind erlaubt.',
     wrong: {
-      voices: ['E4/h G4/h', 'G4/h D4/h', 'C4/h B3/h', 'C3/h G2/h'],
-      caption: 'C-Dur → G-Dur. Im ersten Akkord liegt der Alt (g′, Hals nach unten) über dem Sopran (e′, Hals nach oben).',
+      voices: ['E4/h G4/h', 'G4/h D4/h', 'C4/h D4/h', 'C3/h B2/h'],
+      caption: 'C-Dur → G-Dur (Sextakkord). Im ersten Akkord liegt der Alt (g′, Hals nach unten) über dem Sopran (e′, Hals nach oben).',
     },
     right: {
-      voices: ['G4/h G4/h', 'E4/h D4/h', 'C4/h B3/h', 'C3/h G2/h'],
-      caption: 'C-Dur → G-Dur. Sopran g′ → g′, Alt e′ → d′ (Alt unter dem Sopran).',
+      voices: ['G4/h G4/h', 'E4/h D4/h', 'C4/h G3/h', 'C3/h B2/h'],
+      caption: 'C-Dur → G-Dur (Sextakkord). Sopran g′ → g′, Alt e′ → d′ (Alt unter dem Sopran).',
     },
     fragment: true,
   },
