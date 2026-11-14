@@ -12,7 +12,7 @@ function setting(texts: [string, string, string, string], keyFifths = 0, fragmen
 const cadence = setting([
   'E5/q F5/q D5/q C5/q',
   'G4/q A4/q F4/q E4/q',
-  'C4/q C4/q B3/q G3/q',
+  'C4/q C4/q B3/q C4/q',
   'C3/q F3/q G3/q C3/q',
 ]);
 
